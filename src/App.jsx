@@ -80,6 +80,21 @@ const INDUSTRIES = {
     fixedOpCost: 18000,
     capacityPerEmployee: 8,
     description: "Obras civiles y licitaciones. Fuerte relación gremial y dependencia de fondos públicos."
+  },
+  agropecuario: {
+    name: "Establecimiento Agropecuario",
+    cash: 70000,
+    employees: 4,
+    clients: 15,
+    efficiency: 35,
+    innovation: 15,
+    reputation: 55,
+    contacts: 10,
+    baseMargin: 2200,
+    baseOpCost: 1600,
+    fixedOpCost: 14000,
+    capacityPerEmployee: 5,
+    description: "Cultivo de granos y ganadería. Muy sensible a las retenciones, sequías y precios internacionales."
   }
 };
 
@@ -106,39 +121,48 @@ const ASSETS_BY_INDUSTRY = {
   },
   software: {
     singular: "Servidor Cloud",
-    plural: "Infraestructura Tecnológica",
+    plural: "Servidores / Servidores Cloud",
     emoji: "🖥️",
     baseBtnLabel: "🖥️ Adquirir Servidores",
-    confirmText: (cost, gain) => `¿Deseas adquirir servidores cloud y licencias por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
+    confirmText: (cost, gain) => `¿Deseas adquirir infraestructura y servidores cloud por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
     successMsg: "¡Servidores Cloud adquiridos y configurados!",
     historyMsg: (cost, gain) => `Adquiriste servidores cloud ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   },
   comercio: {
     singular: "Sucursal / Depósito",
-    plural: "Red Logística (Sucursales)",
+    plural: "Sucursales / Depósitos",
     emoji: "🏪",
-    baseBtnLabel: "🏪 Expandir Red Logística",
+    baseBtnLabel: "🏪 Expandir Sucursal",
     confirmText: (cost, gain) => `¿Deseas abrir o expandir una sucursal y centro de distribución por $${cost.toLocaleString()}? Mejorará tu eficiencia logística en +${gain}%.`,
     successMsg: "¡Sucursal inaugurada y operativa!",
     historyMsg: (cost, gain) => `Expandiste una nueva sucursal ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   },
   finanzas: {
     singular: "Terminal de Bolsa / Servidor",
-    plural: "Infraestructura Financiera",
+    plural: "Terminales Financieras / Servidores",
     emoji: "📈",
-    baseBtnLabel: "📈 Adquirir Terminal Financiera",
+    baseBtnLabel: "📈 Adquirir Terminal",
     confirmText: (cost, gain) => `¿Deseas licenciar una terminal financiera avanzada por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
     successMsg: "¡Terminal financiera integrada!",
     historyMsg: (cost, gain) => `Licenciaste terminales financieras ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   },
   construccion: {
     singular: "Maquinaria Vial",
-    plural: "Flota de Maquinaria de Obra",
+    plural: "Equipos de Obra",
     emoji: "🚜",
-    baseBtnLabel: "🚜 Incorporar Maquinaria Vial",
+    baseBtnLabel: "🚜 Comprar Maquinaria",
     confirmText: (cost, gain) => `¿Deseas comprar maquinaria vial pesada por $${cost.toLocaleString()}? Aumentará tu eficiencia de obra en +${gain}%.`,
     successMsg: "¡Maquinaria vial incorporada a la flota!",
     historyMsg: (cost, gain) => `Compraste maquinaria vial ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
+  },
+  agropecuario: {
+    singular: "Tractor / Cosechadora",
+    plural: "Flota de Tractores",
+    emoji: "🌾",
+    baseBtnLabel: "🌾 Comprar Tractor",
+    confirmText: (cost, gain) => `¿Deseas adquirir una cosechadora avanzada por $${cost.toLocaleString()}? Aumentará tu eficiencia de siembra en +${gain}%.`,
+    successMsg: "¡Cosechadora agrícola adquirida y lista para la siembra!",
+    historyMsg: (cost, gain) => `Compraste cosechadora agrícola ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   }
 };
 
@@ -336,6 +360,8 @@ export default function App() {
   // Navigation & Screen transitions
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeTab, setActiveTab] = useState("tab-event");
+  const [mobilePanelTab, setMobilePanelTab] = useState("juego"); // 'finanzas' | 'juego' | 'perfil'
+
   const [setupName, setSetupName] = useState("Juan Pérez");
   const [setupCompanyName, setSetupCompanyName] = useState("Platero Corp");
   const [setupType, setSetupType] = useState("industrial");
@@ -375,7 +401,8 @@ export default function App() {
       software: "SoftPlatero S.A.",
       comercio: "Distribuidora Platero",
       finanzas: "Platero Finanzas",
-      construccion: "Platero Construcciones"
+      construccion: "Platero Construcciones",
+      agropecuario: "Agropecuaria del Plata S.A."
     };
     setSetupCompanyName(businessLabels[setupType]);
   }, [setupType]);
@@ -402,10 +429,10 @@ export default function App() {
   }, []);
 
   // Sync state to localStorage
-  const saveState = (newState, lastOutcomeText = lastMonthOutcome) => {
+  const saveState = (newState, lastOutcomeText = lastMonthOutcome, eventId = null) => {
     const stateToSave = {
       ...newState,
-      currentEventId: currentEvent ? currentEvent.id : null,
+      currentEventId: eventId !== null ? eventId : (currentEvent ? currentEvent.id : null),
       lastMonthOutcome: lastOutcomeText
     };
     localStorage.setItem('platero_game_state', JSON.stringify(stateToSave));
@@ -447,8 +474,9 @@ export default function App() {
     setLastMonthOutcome("");
     setActiveTab("tab-event");
     setTenderResult(null);
-    triggerRandomEvent(initial);
+    const chosenEvent = triggerRandomEvent(initial);
     generateTender(initial);
+    saveState(initial, "", chosenEvent ? chosenEvent.id : null);
   };
 
   // Confirm and restart game (using upop)
@@ -482,6 +510,7 @@ export default function App() {
                currentState.businessType === "software" ? "Digitalización Catastro Tributario" :
                currentState.businessType === "industrial" ? "Estructuras Metálicas para Escuela" :
                currentState.businessType === "comercio" ? "Distribución Bolsones de Alimentos" :
+               currentState.businessType === "agropecuario" ? "Abastecimiento de Trigo y Granos del Estado" :
                "Bonos de Deuda del Estado Soberano",
         budget,
         duration: 12,
@@ -887,15 +916,16 @@ export default function App() {
   const triggerRandomEvent = (currentState) => {
     let eligible = events.filter(ev => ev.trigger(currentState) && !currentState.usedEventIds.includes(ev.id));
     if (eligible.length === 0) {
-      currentState.usedEventIds = []; 
-      eligible = events.filter(ev => ev.trigger(currentState));
+       currentState.usedEventIds = []; 
+       eligible = events.filter(ev => ev.trigger(currentState));
     }
 
     if (eligible.length > 0) {
       const chosen = eligible[Math.floor(Math.random() * eligible.length)];
       setCurrentEvent(chosen);
+      return chosen;
     } else {
-      setCurrentEvent({
+      const defaultEv = {
         id: 0,
         title: "Mes de Transición Económica",
         category: "MACROECONOMÍA",
@@ -909,7 +939,9 @@ export default function App() {
             }
           }
         ]
-      });
+      };
+      setCurrentEvent(defaultEv);
+      return defaultEv;
     }
   };
 
@@ -1258,12 +1290,12 @@ export default function App() {
     nextState.turn += 1;
 
     // Load next event and generate next tender
-    triggerRandomEvent(nextState);
+    const nextEvent = triggerRandomEvent(nextState);
     generateTender(nextState);
 
     // Save final turn state
     setState(nextState);
-    saveState(nextState, outcomeSummary);
+    saveState(nextState, outcomeSummary, nextEvent ? nextEvent.id : null);
 
     if (triggerAnnualReport) {
       setShowAnnualModal(true);
@@ -1490,7 +1522,7 @@ export default function App() {
                       className={`business-option glass ${setupType === key ? 'selected' : ''}`}
                       onClick={() => setSetupType(key)}
                     >
-                      <h3>{key === 'industrial' ? '🏭' : key === 'software' ? '💻' : key === 'comercio' ? '🚢' : key === 'finanzas' ? '💵' : '🏗️'} {data.name}</h3>
+                      <h3>{key === 'industrial' ? '🏭' : key === 'software' ? '💻' : key === 'comercio' ? '🚢' : key === 'finanzas' ? '💵' : key === 'construccion' ? '🏗️' : '🌾'} {data.name}</h3>
                       <p className="desc">{data.description}</p>
                       <div className="option-stats">
                         <span>💰 ${data.cash.toLocaleString()}</span>
@@ -1520,7 +1552,22 @@ export default function App() {
           <header id="game-header" className="glass">
             <div className="header-left">
               <h2 className="mini-logo">PLATERO</h2>
-              <span id="player-badge" className="badge">{state.stage}</span>
+              <span id="player-badge" className="badge" title={state.stage}>
+                <span className="stage-full">{state.stage}</span>
+                <span className="stage-short">
+                  {state.stage === "Emprendedor de Barrio" ? "Emprendedor" :
+                   state.stage === "Pyme Familiar" ? "PyME" :
+                   state.stage === "Empresa Consolidada" ? "Consol." :
+                   state.stage === "Corporación Nacional" ? "Corp. Nac." :
+                   state.stage === "Pulpo Económico / Magnate" ? "Magnate" : state.stage}
+                </span>
+              </span>
+              <span className="badge" title="Edad del empresario" style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
+                🎂 {30 + Math.floor((state.turn - 1) / 12)} años
+              </span>
+              <span className="badge badge-month-mobile">
+                M{state.turn}
+              </span>
               {state.isPublic && (
                 <span className="badge" style={{ borderColor: 'var(--color-success)', color: 'var(--color-success)', background: 'rgba(16,185,129,0.05)', whiteSpace: 'nowrap' }}>
                   📈 ${state.sharePrice.toLocaleString()}
@@ -1531,23 +1578,25 @@ export default function App() {
             {/* The Electoral / Alignment Barometer */}
             <div className="electoral-barometer">
               <div className="barometer-labels">
-                <span className="text-state">Casta: {stateBarometerVal}%</span>
-                <span className="text-info">Mercado: {marketBarometerVal}%</span>
+                <span className="text-state" style={{ fontWeight: '700' }}>Casta: {stateBarometerVal}%</span>
+                <span className="text-info" style={{ fontWeight: '700' }}>Mercado: {marketBarometerVal}%</span>
               </div>
-              <div className="barometer-track">
-                <div className="barometer-fill-nacional" style={{ width: `${stateBarometerVal}%` }}></div>
-                <div className="barometer-fill-liberal" style={{ width: `${marketBarometerVal}%` }}></div>
+              <div className="barometer-track" style={{ height: '8px' }}>
+                <div className="barometer-fill-nacional" style={{ width: `${stateBarometerVal}%`, background: 'var(--color-estado)' }}></div>
+                <div className="barometer-fill-liberal" style={{ width: `${marketBarometerVal}%`, background: 'var(--color-market)' }}></div>
               </div>
             </div>
 
             <div className="game-controls">
-              <div className="gov-ticker" id="gov-ticker">
+              <div className={`gov-ticker glass ${state.govTurnsLeft <= 3 ? 'pulse-red-border' : ''}`} id="gov-ticker" style={{ padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}>
                 <span id="gov-type" className={`badge-gov ${govDefObj.badgeClass}`}>
                   {state.governmentType}
                 </span>
-                <span id="gov-countdown" className="ticker-val">{state.govTurnsLeft}m</span>
+                <span id="gov-countdown" className={`ticker-val ${state.govTurnsLeft <= 3 ? 'text-negative font-bold' : ''}`} style={{ transition: 'color 0.3s' }}>
+                  {state.govTurnsLeft}m {state.govTurnsLeft <= 3 ? '🗳️' : ''}
+                </span>
               </div>
-              <button onClick={confirmRestartGame} className="btn btn-danger btn-sm" title="Reiniciar partida">🔄</button>
+              <button onClick={confirmRestartGame} className="btn btn-secondary btn-sm" title="Reiniciar partida" style={{ padding: '6px' }}>🔄</button>
             </div>
           </header>
 
@@ -1555,7 +1604,7 @@ export default function App() {
           <div id="game-body">
             
             {/* COLUMN 1: FINANCIAL LEDGER */}
-            <aside id="sidebar-col1">
+            <aside id="sidebar-col1" className={`mobile-panel ${mobilePanelTab === 'finanzas' ? 'mobile-active' : ''}`}>
               <div className="ledger-card glass">
                 <div className="ledger-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3>💰 {state.companyName}</h3>
@@ -1719,7 +1768,7 @@ export default function App() {
                   </button>
                 )}
 
-                {/* Asset investment button — shows dynamic cost and efficiency gain */}
+                {/* Asset investment button — clean & compact display to prevent wrapping */}
                 {(() => {
                   const assetDef = ASSETS_BY_INDUSTRY[state.businessType];
                   const nextCost = getNextAssetCost(state.machineryCount);
@@ -1730,12 +1779,9 @@ export default function App() {
                       onClick={confirmBuyAsset}
                       className={`btn w-100 ${canAfford ? 'btn-primary' : 'btn-secondary'}`}
                       style={{ opacity: canAfford ? 1 : 0.6 }}
-                      title={`Costo: $${nextCost.toLocaleString()} | Eficiencia +${nextGain}%`}
+                      title={`Costo: $${nextCost.toLocaleString()} | Eficiencia: +${nextGain}%`}
                     >
-                      {assetDef?.baseBtnLabel || '🏭 Invertir en Activos'}
-                      <span style={{ fontSize: '0.72rem', opacity: 0.8, marginLeft: '4px' }}>
-                        (${nextCost.toLocaleString()} / +{nextGain}%)
-                      </span>
+                      {assetDef?.baseBtnLabel || '🏭 Comprar Activo'} (${nextCost.toLocaleString()})
                     </button>
                   );
                 })()}
@@ -1746,14 +1792,11 @@ export default function App() {
                   return (
                     <button
                       onClick={confirmMaintenance}
-                      className={`btn w-100 ${canAfford ? 'btn-secondary' : 'btn-secondary'}`}
+                      className="btn btn-secondary w-100"
                       style={{ opacity: canAfford ? 1 : 0.5 }}
-                      title="Frena la depreciación mensual y recupera +3% de Eficiencia"
+                      title={`Frena la depreciación mensual y recupera +3% de Eficiencia. Costo: $${maintCost.toLocaleString()}`}
                     >
-                      🔧 Mantenimiento Preventivo
-                      <span style={{ fontSize: '0.72rem', opacity: 0.8, marginLeft: '4px' }}>
-                        (-${maintCost.toLocaleString()})
-                      </span>
+                      🔧 Mantenimiento (${maintCost.toLocaleString()})
                     </button>
                   );
                 })()}
@@ -1776,7 +1819,7 @@ export default function App() {
             </aside>
 
             {/* COLUMN 2: ACTION WORKSPACE */}
-            <main id="workspace-col2">
+            <main id="workspace-col2" className={`mobile-panel ${mobilePanelTab === 'juego' ? 'mobile-active' : ''}`}>
               {/* TAB NAVIGATION */}
               <nav id="workspace-nav" className="glass">
                 <button 
@@ -2190,7 +2233,7 @@ export default function App() {
             </main>
 
             {/* COLUMN 3: PROFILE, METERS & LOGS */}
-            <aside id="sidebar-col3">
+            <aside id="sidebar-col3" className={`mobile-panel ${mobilePanelTab === 'perfil' ? 'mobile-active' : ''}`}>
               {/* ALINEACIÓN E IDENTIDAD */}
               <div className="sidebar-section">
                 <h3>⚖️ Perfil del Empresario</h3>
@@ -2235,27 +2278,12 @@ export default function App() {
                   <span className="stat-label">Maquinarias:</span>
                   <span className="stat-value font-mono">{state.machineryCount}</span>
                 </div>
-                <div className="stat-row" style={{flexDirection:'column', alignItems:'stretch', gap:'4px'}}>
-                  {(() => {
-                    const eff = state.efficiency;
-                    const pct = Math.min(100, (eff / 200) * 100);
-                    const depRate = state.machineryCount > 0 ? 1 + Math.floor(state.machineryCount / 4) : 1;
-                    const color = eff >= 150 ? '#f59e0b' : eff >= 100 ? '#06b6d4' : 'var(--color-success)';
-                    const label = eff >= 150 ? '⚡ Automatización Avanzada' : eff >= 100 ? '🔵 Alta Eficiencia' : eff >= 60 ? '🟢 Normal' : '🔴 Baja Eficiencia';
-                    return (
-                      <>
-                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                          <span className="stat-label">Eficiencia Operativa: <strong style={{color}}>{eff}%</strong></span>
-                          <span style={{fontSize:'0.68rem', color:'var(--text-muted)'}}>/ 200 · -{depRate}%/mes</span>
-                        </div>
-                        <div className="progress-bar-container" style={{position:'relative'}} title={`${label} | Depreciación: -${depRate}%/mes`}>
-                          <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'1px', background:'rgba(255,255,255,0.25)', zIndex:1, pointerEvents:'none'}}/>
-                          <div id="bar-efficiency" className="progress-bar" style={{ width: `${pct}%`, backgroundColor: color, transition:'width 0.5s ease' }}/>
-                        </div>
-                        <div style={{fontSize:'0.68rem', color, opacity:0.85}}>{label}</div>
-                      </>
-                    );
-                  })()}
+                <div className="stat-row">
+                  <span className="stat-label">Eficiencia Operativa: {state.efficiency}%</span>
+                  <div className="progress-bar-container" style={{position:'relative'}} title={`Eficiencia Operativa: ${state.efficiency}% / 200 (Depreciación: -${state.machineryCount > 0 ? 1 + Math.floor(state.machineryCount / 4) : 1}%/mes)`}>
+                    <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'1px', background:'rgba(255,255,255,0.25)', zIndex:1, pointerEvents:'none'}}/>
+                    <div id="bar-efficiency" className="progress-bar" style={{ width: `${Math.min(100, (state.efficiency / 200) * 100)}%`, backgroundColor: state.efficiency >= 150 ? '#f59e0b' : state.efficiency >= 100 ? '#06b6d4' : 'var(--color-success)' }}></div>
+                  </div>
                 </div>
                 <div className="stat-row">
                   <span className="stat-label">Innovación Técnica: {state.innovation}%</span>
@@ -2288,6 +2316,31 @@ export default function App() {
             </aside>
             
           </div>
+
+          {/* MOBILE BOTTOM NAVIGATION */}
+          <nav id="mobile-bottom-nav">
+            <button
+              className={`mobile-nav-btn ${mobilePanelTab === 'finanzas' ? 'active' : ''}`}
+              onClick={() => setMobilePanelTab('finanzas')}
+            >
+              <span className="mobile-nav-icon">💰</span>
+              <span className="mobile-nav-label">Finanzas</span>
+            </button>
+            <button
+              className={`mobile-nav-btn ${mobilePanelTab === 'juego' ? 'active' : ''}`}
+              onClick={() => setMobilePanelTab('juego')}
+            >
+              <span className="mobile-nav-icon">🎮</span>
+              <span className="mobile-nav-label">Juego</span>
+            </button>
+            <button
+              className={`mobile-nav-btn ${mobilePanelTab === 'perfil' ? 'active' : ''}`}
+              onClick={() => setMobilePanelTab('perfil')}
+            >
+              <span className="mobile-nav-icon">📊</span>
+              <span className="mobile-nav-label">Perfil</span>
+            </button>
+          </nav>
 
           {/* FOOTER BAR */}
           <footer id="game-footer" className="glass">
