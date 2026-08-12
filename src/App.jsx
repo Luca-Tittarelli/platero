@@ -83,53 +83,67 @@ const INDUSTRIES = {
   }
 };
 
+// Calcula el costo de la próxima unidad de activo (rendimientos decrecientes)
+// Base $80k, +$20k por cada activo ya comprado
+const getNextAssetCost = (machineryCount) => Math.floor(80000 + machineryCount * 20000);
+
+// Eficiencia ganada por un activo: rendimientos decrecientes
+// 1er activo: +20%, 2do: +15%, 3ro: +12%, luego ~10, 8, 6... mínimo 4
+const getAssetEfficiencyGain = (machineryCount) => {
+  const gains = [20, 15, 12, 10, 9, 8, 7, 6, 5];
+  return gains[Math.min(machineryCount, gains.length - 1)] ?? 4;
+};
+
 const ASSETS_BY_INDUSTRY = {
   industrial: {
     singular: "Máquina Industrial",
     plural: "Activos en Maquinarias",
     emoji: "🏭",
-    btnLabel: "🏭 Comprar Máquina ($80.000)",
-    confirmText: "¿Deseas comprar maquinaria pesada por $80.000? Aumentará tu eficiencia en +15%.",
+    baseBtnLabel: "🏭 Comprar Máquina",
+    confirmText: (cost, gain) => `¿Deseas comprar maquinaria pesada por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
     successMsg: "¡Maquinaria adquirida e instalada!",
-    historyMsg: "Compraste maquinaria industrial ($80.000). +15% Eficiencia."
+    historyMsg: (cost, gain) => `Compraste maquinaria industrial ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   },
   software: {
     singular: "Servidor Cloud",
-    plural: "Servidores / Servidores Cloud",
+    plural: "Infraestructura Tecnológica",
     emoji: "🖥️",
-    btnLabel: "🖥️ Adquirir Servidores ($80.000)",
-    confirmText: "¿Deseas adquirir infraestructura y servidores cloud por $80.000? Aumentará tu eficiencia operativa en +15%.",
+    baseBtnLabel: "🖥️ Adquirir Servidores",
+    confirmText: (cost, gain) => `¿Deseas adquirir servidores cloud y licencias por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
     successMsg: "¡Servidores Cloud adquiridos y configurados!",
-    historyMsg: "Adquiriste servidores cloud ($80.000). +15% Eficiencia."
+    historyMsg: (cost, gain) => `Adquiriste servidores cloud ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   },
   comercio: {
     singular: "Sucursal / Depósito",
-    plural: "Sucursales / Depósitos",
+    plural: "Red Logística (Sucursales)",
     emoji: "🏪",
-    btnLabel: "🏪 Expandir Sucursal ($80.000)",
-    confirmText: "¿Deseas abrir o expandir una sucursal / centro de distribución por $80.000? Aumentará tu eficiencia logística en +15%.",
+    baseBtnLabel: "🏪 Expandir Red Logística",
+    confirmText: (cost, gain) => `¿Deseas abrir o expandir una sucursal y centro de distribución por $${cost.toLocaleString()}? Mejorará tu eficiencia logística en +${gain}%.`,
     successMsg: "¡Sucursal inaugurada y operativa!",
-    historyMsg: "Expandiste una nueva sucursal ($80.000). +15% Eficiencia."
+    historyMsg: (cost, gain) => `Expandiste una nueva sucursal ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   },
   finanzas: {
     singular: "Terminal de Bolsa / Servidor",
-    plural: "Terminales Financieras / Servidores",
+    plural: "Infraestructura Financiera",
     emoji: "📈",
-    btnLabel: "📈 Adquirir Terminal ($80.000)",
-    confirmText: "¿Deseas licenciar una terminal de bolsa avanzada y hardware dedicado por $80.000? Aumentará tu eficiencia en +15%.",
+    baseBtnLabel: "📈 Adquirir Terminal Financiera",
+    confirmText: (cost, gain) => `¿Deseas licenciar una terminal financiera avanzada por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
     successMsg: "¡Terminal financiera integrada!",
-    historyMsg: "Licenciaste terminales financieras ($80.000). +15% Eficiencia."
+    historyMsg: (cost, gain) => `Licenciaste terminales financieras ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   },
   construccion: {
     singular: "Maquinaria Vial",
-    plural: "Equipos de Obra",
+    plural: "Flota de Maquinaria de Obra",
     emoji: "🚜",
-    btnLabel: "🚜 Comprar Maquinaria Vial ($80.000)",
-    confirmText: "¿Deseas comprar maquinaria vial pesada por $80.000? Aumentará tu eficiencia de obra en +15%.",
+    baseBtnLabel: "🚜 Incorporar Maquinaria Vial",
+    confirmText: (cost, gain) => `¿Deseas comprar maquinaria vial pesada por $${cost.toLocaleString()}? Aumentará tu eficiencia de obra en +${gain}%.`,
     successMsg: "¡Maquinaria vial incorporada a la flota!",
-    historyMsg: "Compraste maquinaria vial ($80.000). +15% Eficiencia."
+    historyMsg: (cost, gain) => `Compraste maquinaria vial ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   }
 };
+
+// Costo de mantenimiento preventivo: 3% del valor total de activos
+const getMaintenanceCost = (machineryCount) => Math.floor(machineryCount * 80000 * 0.03);
 
 const GOVERNMENTS = {
   Liberalismo: {
@@ -617,14 +631,19 @@ export default function App() {
     });
   };
 
-  // Buying machinery/assets (using confirm, sector specific)
+  // Buying machinery/assets — diminishing returns on efficiency, scaling cost
   const confirmBuyAsset = () => {
     const assetDef = ASSETS_BY_INDUSTRY[state.businessType] || ASSETS_BY_INDUSTRY.industrial;
-    if (state.cash < 80000) {
-      upop.toast.warning(`Falta capital para esta inversión ($80.000).`);
+    const cost = getNextAssetCost(state.machineryCount);
+    const gain = getAssetEfficiencyGain(state.machineryCount);
+    if (state.cash < cost) {
+      upop.toast.warning(`Falta capital para esta inversión ($${cost.toLocaleString()}).`);
       return;
     }
-    upop.confirm.success(assetDef.confirmText, {
+    const confirmMsg = typeof assetDef.confirmText === 'function'
+      ? assetDef.confirmText(cost, gain)
+      : assetDef.confirmText;
+    upop.confirm.success(confirmMsg, {
       textoAceptar: "Invertir",
       textoCancelar: "Cancelar",
       onConfirm: () => handleBuyAsset()
@@ -635,13 +654,55 @@ export default function App() {
     setState(prev => {
       const nextState = { ...prev };
       const assetDef = ASSETS_BY_INDUSTRY[prev.businessType] || ASSETS_BY_INDUSTRY.industrial;
-      nextState.cash -= 80000;
+      const cost = getNextAssetCost(prev.machineryCount);
+      const gain = getAssetEfficiencyGain(prev.machineryCount);
+      nextState.cash -= cost;
       nextState.machineryCount += 1;
-      nextState.efficiency = Math.min(100, nextState.efficiency + 15);
+      // Efficiency can go beyond 100 — represents automation/advanced optimization (cap: 200)
+      nextState.efficiency = Math.min(200, nextState.efficiency + gain);
       nextState.independence = Math.min(100, nextState.independence + 5);
-      nextState.historyLog.unshift(`[Activos] ${assetDef.historyMsg}`);
+      const msg = typeof assetDef.historyMsg === 'function'
+        ? assetDef.historyMsg(cost, gain)
+        : assetDef.historyMsg;
+      nextState.historyLog.unshift(`[Activos] ${msg}`);
       saveState(nextState);
       upop.toast.success(assetDef.successMsg);
+      return nextState;
+    });
+  };
+
+  // Mantenimiento preventivo — frena la depreciación y sube +3% eficiencia
+  const confirmMaintenance = () => {
+    const cost = getMaintenanceCost(state.machineryCount);
+    if (state.machineryCount === 0) {
+      upop.toast.warning("No tenés activos para mantener. Comprá maquinaria primero.");
+      return;
+    }
+    if (state.cash < cost) {
+      upop.toast.warning(`Falta caja para mantenimiento preventivo ($${cost.toLocaleString()}).`);
+      return;
+    }
+    upop.confirm.success(
+      `¿Invertir $${cost.toLocaleString()} en mantenimiento preventivo de tus activos? Reducirá la depreciación mensual y recuperará +3% de Eficiencia.`,
+      {
+        textoAceptar: "Mantener",
+        textoCancelar: "Cancelar",
+        onConfirm: () => handleMaintenance()
+      }
+    );
+  };
+
+  const handleMaintenance = () => {
+    setState(prev => {
+      const nextState = { ...prev };
+      const cost = getMaintenanceCost(prev.machineryCount);
+      nextState.cash -= cost;
+      nextState.efficiency = Math.min(200, nextState.efficiency + 3);
+      // Mark that maintenance was done this month — skip natural depreciation
+      nextState.maintenanceDoneThisTurn = true;
+      nextState.historyLog.unshift(`[Activos] Mantenimiento preventivo realizado (-$${cost.toLocaleString()}). +3% Eficiencia, depreciación frenada.`);
+      saveState(nextState);
+      upop.toast.success("Mantenimiento preventivo completado.");
       return nextState;
     });
   };
@@ -923,7 +984,9 @@ export default function App() {
     
     const fixedCostBase = template.fixedOpCost || 10000;
     const stageFixedCost = Math.floor(fixedCostBase * stageMultiplier);
-    const variableCost = Math.floor(servedClients * template.baseOpCost * opCostMultiplier * (1 - nextState.efficiency / 160));
+    // Efficiency now scales up to 200. At 100 = -37.5% costs, at 200 = -62.5% costs (diminishing returns curve)
+    const efficiencyFactor = Math.max(0.375, 1 - (nextState.efficiency / 320));
+    const variableCost = Math.floor(servedClients * template.baseOpCost * opCostMultiplier * efficiencyFactor);
     const operatingCost = stageFixedCost + variableCost;
     
     // Tax Shield check (using Gov taxRate)
@@ -980,16 +1043,31 @@ export default function App() {
     nextState.annualTaxes += taxCost;
     nextState.annualNet += (netProfit - dividendCost);
 
-    // R&D & Salaries increments
+    // === EFFICIENCY DEPRECIATION (monthly) ===
+    // Assets get outdated, staff rotates, processes degrade without investment
+    // Depreciation rate grows with machinery count (bigger fleet = harder to keep updated)
+    // Maintenance action this turn prevents depreciation
+    if (!nextState.maintenanceDoneThisTurn) {
+      const baseDepreciation = nextState.machineryCount > 0
+        ? 1 + Math.floor(nextState.machineryCount / 4) // +1% per 4 assets
+        : 1;
+      const depreciationHit = nextState.economicCycle === "Estanflación" ? baseDepreciation + 1 : baseDepreciation;
+      nextState.efficiency = Math.max(5, nextState.efficiency - depreciationHit);
+    }
+    nextState.maintenanceDoneThisTurn = false;
+
+    // R&D & Salary effects on efficiency (can push above 100, up to 200)
     if (nextState.rndInvestment > 0) {
       nextState.innovation = Math.min(100, nextState.innovation + Math.floor((nextState.rndInvestment / 8000) + 1));
-      nextState.efficiency = Math.min(100, nextState.efficiency + Math.floor((nextState.rndInvestment / 12000) + 1));
+      // R&D improves efficiency — more impactful at higher investment levels
+      const rndEffGain = Math.floor((nextState.rndInvestment / 10000) + 0.5);
+      nextState.efficiency = Math.min(200, nextState.efficiency + rndEffGain);
     }
 
     if (nextState.salaryPerEmployee > 1600) {
-      nextState.efficiency = Math.min(100, nextState.efficiency + 2);
+      nextState.efficiency = Math.min(200, nextState.efficiency + 2); // motivated workforce
     } else if (nextState.salaryPerEmployee < 1400) {
-      nextState.efficiency = Math.max(10, nextState.efficiency - 3);
+      nextState.efficiency = Math.max(5, nextState.efficiency - 4); // brain drain, low morale
     }
 
     // Client growth/decay based on price multiplier, reputation, and macro cycle
@@ -1227,7 +1305,7 @@ export default function App() {
   
   const projFixedCostBase = template?.fixedOpCost || 10000;
   const projStageFixedCost = Math.floor(projFixedCostBase * projStageMultiplier);
-  const projVariableCost = template ? Math.floor(projServedClients * template.baseOpCost * projOpCostMultiplier * (1 - state.efficiency / 160)) : 0;
+  const projVariableCost = template ? Math.floor(projServedClients * template.baseOpCost * projOpCostMultiplier * Math.max(0.375, 1 - state.efficiency / 320)) : 0;
   const projOpCost = projStageFixedCost + projVariableCost;
   
   const projTaxRate = (() => {
@@ -1532,7 +1610,7 @@ export default function App() {
                   <div className="stat-row">
                     <span className="stat-label">Costo Operativo/Cliente:</span>
                     <span className="stat-value text-negative">
-                      ${Math.floor(INDUSTRIES[state.businessType]?.baseOpCost * (1 - state.efficiency / 160))}
+                       ${Math.floor(INDUSTRIES[state.businessType]?.baseOpCost * Math.max(0.375, 1 - state.efficiency / 320))}
                     </span>
                   </div>
                 </div>
@@ -1641,9 +1719,44 @@ export default function App() {
                   </button>
                 )}
 
-                <button onClick={confirmBuyAsset} className="btn btn-primary w-100">
-                  {ASSETS_BY_INDUSTRY[state.businessType]?.btnLabel || '🏭 Invertir en Activos ($80.000)'}
-                </button>
+                {/* Asset investment button — shows dynamic cost and efficiency gain */}
+                {(() => {
+                  const assetDef = ASSETS_BY_INDUSTRY[state.businessType];
+                  const nextCost = getNextAssetCost(state.machineryCount);
+                  const nextGain = getAssetEfficiencyGain(state.machineryCount);
+                  const canAfford = state.cash >= nextCost;
+                  return (
+                    <button
+                      onClick={confirmBuyAsset}
+                      className={`btn w-100 ${canAfford ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ opacity: canAfford ? 1 : 0.6 }}
+                      title={`Costo: $${nextCost.toLocaleString()} | Eficiencia +${nextGain}%`}
+                    >
+                      {assetDef?.baseBtnLabel || '🏭 Invertir en Activos'}
+                      <span style={{ fontSize: '0.72rem', opacity: 0.8, marginLeft: '4px' }}>
+                        (${nextCost.toLocaleString()} / +{nextGain}%)
+                      </span>
+                    </button>
+                  );
+                })()}
+                {/* Mantenimiento preventivo — solo si hay activos */}
+                {state.machineryCount > 0 && (() => {
+                  const maintCost = getMaintenanceCost(state.machineryCount);
+                  const canAfford = state.cash >= maintCost;
+                  return (
+                    <button
+                      onClick={confirmMaintenance}
+                      className={`btn w-100 ${canAfford ? 'btn-secondary' : 'btn-secondary'}`}
+                      style={{ opacity: canAfford ? 1 : 0.5 }}
+                      title="Frena la depreciación mensual y recupera +3% de Eficiencia"
+                    >
+                      🔧 Mantenimiento Preventivo
+                      <span style={{ fontSize: '0.72rem', opacity: 0.8, marginLeft: '4px' }}>
+                        (-${maintCost.toLocaleString()})
+                      </span>
+                    </button>
+                  );
+                })()}
                 <button onClick={confirmTakeLoan} className="btn btn-warning w-100">
                   🏦 Tomar Crédito $100.000
                 </button>
@@ -2122,11 +2235,27 @@ export default function App() {
                   <span className="stat-label">Maquinarias:</span>
                   <span className="stat-value font-mono">{state.machineryCount}</span>
                 </div>
-                <div className="stat-row">
-                  <span className="stat-label">Eficiencia Operativa: {state.efficiency}%</span>
-                  <div className="progress-bar-container">
-                    <div id="bar-efficiency" className="progress-bar" style={{ width: `${state.efficiency}%`, backgroundColor: 'var(--color-success)' }}></div>
-                  </div>
+                <div className="stat-row" style={{flexDirection:'column', alignItems:'stretch', gap:'4px'}}>
+                  {(() => {
+                    const eff = state.efficiency;
+                    const pct = Math.min(100, (eff / 200) * 100);
+                    const depRate = state.machineryCount > 0 ? 1 + Math.floor(state.machineryCount / 4) : 1;
+                    const color = eff >= 150 ? '#f59e0b' : eff >= 100 ? '#06b6d4' : 'var(--color-success)';
+                    const label = eff >= 150 ? '⚡ Automatización Avanzada' : eff >= 100 ? '🔵 Alta Eficiencia' : eff >= 60 ? '🟢 Normal' : '🔴 Baja Eficiencia';
+                    return (
+                      <>
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                          <span className="stat-label">Eficiencia Operativa: <strong style={{color}}>{eff}%</strong></span>
+                          <span style={{fontSize:'0.68rem', color:'var(--text-muted)'}}>/ 200 · -{depRate}%/mes</span>
+                        </div>
+                        <div className="progress-bar-container" style={{position:'relative'}} title={`${label} | Depreciación: -${depRate}%/mes`}>
+                          <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'1px', background:'rgba(255,255,255,0.25)', zIndex:1, pointerEvents:'none'}}/>
+                          <div id="bar-efficiency" className="progress-bar" style={{ width: `${pct}%`, backgroundColor: color, transition:'width 0.5s ease' }}/>
+                        </div>
+                        <div style={{fontSize:'0.68rem', color, opacity:0.85}}>{label}</div>
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="stat-row">
                   <span className="stat-label">Innovación Técnica: {state.innovation}%</span>
