@@ -540,13 +540,13 @@ body {
 }
 
 
-/* --- Game Screen Grid and Flex Layouts (Audit bug #1) --- */
+/* --- Game Screen Grid and Flex Layouts --- */
 #game-screen {
   flex: 1;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden;
+  overflow: hidden; /* desktop: columns scroll internally */
 }
 
 #game-body {
@@ -554,104 +554,210 @@ body {
   display: grid;
   grid-template-columns: 320px 1fr 340px;
   overflow: hidden;
+  min-height: 0; /* needed for flex children to scroll */
 }
-/* ===== RESPONSIVE BREAKPOINTS ===== */
+/* =============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================= */
 
-/* Large tablet / small desktop */
-@media (max-width: 1200px) {
+/* ── 1. Large screens (default, already defined above) ─────── */
+
+/* ── 2. Medium desktop (≤1400px) ────────────────────────────── */
+@media (max-width: 1400px) {
   #game-body {
-    grid-template-columns: 260px 1fr 280px;
+    grid-template-columns: 290px 1fr 310px;
+  }
+}
+
+/* ── 3. Small desktop / large tablet (≤1150px) ───────────────── */
+@media (max-width: 1150px) {
+  #game-body {
+    grid-template-columns: 260px 1fr 270px;
+  }
+  #workspace-col2 {
+    padding: 20px 24px;
   }
   .electoral-barometer {
-    max-width: 320px;
-    margin: 0 10px;
+    max-width: 300px;
+    margin: 0 8px;
   }
 }
 
-/* Tablet */
+/* ── 4. Tablet landscape (≤960px) ────────────────────────────── */
 @media (max-width: 960px) {
+  /* Header wraps barometer below logo + controls */
+  #game-screen {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
   #game-header {
     flex-wrap: wrap;
     height: auto;
-    padding: 8px 14px;
+    padding: 10px 16px;
     gap: 8px;
   }
+  .header-left { flex: 1; }
   .electoral-barometer {
     order: 3;
     flex-basis: 100%;
     max-width: 100%;
     margin: 0;
   }
-  .header-left {
-    flex: 1;
-  }
+
+  /* Body: two sidebars on top, workspace full-width below */
   #game-body {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto 1fr;
-    overflow-y: auto;
+    overflow: visible;
+    min-height: 0;
   }
   #sidebar-col1 {
     grid-column: 1;
     grid-row: 1;
+    max-height: 480px;
+    overflow-y: auto;
     border-right: 1px solid var(--glass-border);
     border-bottom: 1px solid var(--glass-border);
-    max-height: 420px;
-    overflow-y: auto;
   }
   #sidebar-col3 {
     grid-column: 2;
     grid-row: 1;
-    border-bottom: 1px solid var(--glass-border);
-    max-height: 420px;
+    max-height: 480px;
     overflow-y: auto;
+    border-left: none;
+    border-bottom: 1px solid var(--glass-border);
   }
-  #main-col2 {
+  #workspace-col2 {
     grid-column: 1 / -1;
     grid-row: 2;
+    padding: 20px 20px;
+    overflow: visible;
   }
+
+  /* Tab buttons smaller */
+  .tab-btn {
+    font-size: 0.78rem;
+    padding: 7px 6px;
+  }
+
+  /* Event card fills width */
+  .event-card { margin: 0; }
 }
 
-/* Mobile */
-@media (max-width: 600px) {
-  #game-header {
-    padding: 8px 10px;
-    gap: 6px;
-  }
-  .mini-logo {
-    font-size: 1rem !important;
-  }
-  .badge-gov {
-    font-size: 0.65rem;
-    padding: 2px 7px;
-  }
+/* ── 5. Tablet portrait (≤720px) ─────────────────────────────── */
+@media (max-width: 720px) {
   #game-body {
     grid-template-columns: 1fr;
     grid-template-rows: none;
-    overflow-y: auto;
+  }
+  #sidebar-col1 {
+    grid-column: 1;
+    grid-row: auto;
+    max-height: 360px;
+    border-right: none;
+  }
+  #sidebar-col3 {
+    grid-column: 1;
+    grid-row: auto;
+    max-height: 400px;
+  }
+  #workspace-col2 {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+/* ── 6. Mobile (≤600px) ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* Header */
+  #game-header {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .mini-logo { font-size: 0.95rem !important; }
+  .badge-gov {
+    font-size: 0.62rem;
+    padding: 2px 6px;
+  }
+  .header-left { gap: 6px; }
+
+  /* Body: single column, natural scroll */
+  #game-screen { overflow-y: auto; }
+  #game-body {
+    grid-template-columns: 1fr;
+    overflow: visible;
   }
   #sidebar-col1,
   #sidebar-col3,
-  #main-col2 {
+  #workspace-col2 {
     grid-column: 1;
     grid-row: auto;
     max-height: none;
     height: auto;
     overflow-y: visible;
-  }
-  #sidebar-col1 {
-    border-right: none;
+    border: none;
     border-bottom: 1px solid var(--glass-border);
   }
-  #sidebar-col3 {
-    border-bottom: 1px solid var(--glass-border);
+  #sidebar-col1 { padding: 14px; }
+  #sidebar-col3 { padding: 14px; }
+  #workspace-col2 { padding: 14px 12px; }
+
+  /* Ledger */
+  .stat-row-large .stat-value { font-size: 1.1rem; }
+  .ledger-card { padding: 12px; }
+
+  /* Workspace nav tabs: wrap to 2 per row */
+  #workspace-nav {
+    flex-wrap: wrap;
+    gap: 4px;
   }
+  .tab-btn {
+    font-size: 0.72rem;
+    padding: 6px 4px;
+    flex: 1 1 40%;
+  }
+
+  /* Event card */
   .event-card {
-    margin: 10px;
-    padding: 16px;
+    margin: 0;
+    padding: 14px;
   }
+  .event-header h2 { font-size: 1rem; }
+  .event-body p { font-size: 0.85rem; }
+
+  /* Event options: vertical */
   .event-options {
     flex-direction: column;
+    gap: 10px;
   }
+  .btn-option {
+    font-size: 0.82rem;
+    padding: 10px 12px;
+  }
+
+  /* Sidebar actions: full-width buttons */
+  .sidebar-actions { gap: 8px; }
+  .sidebar-actions button { font-size: 0.8rem; }
+
+  /* Stat bars */
+  .progress-bar-container { height: 7px; }
+
+  /* History log */
+  .log-container { max-height: 220px; }
+
+  /* Management cards */
+  .management-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 7. Very small mobile (≤380px) ───────────────────────────── */
+@media (max-width: 380px) {
+  .mini-logo { display: none !important; }
+  .game-controls { gap: 5px; }
+  .tab-btn { font-size: 0.65rem; }
+  #sidebar-col1, #sidebar-col3, #workspace-col2 { padding: 10px; }
 }
 
 /* Col 1: Financial Ledger */
