@@ -3,241 +3,25 @@ import { events } from './events';
 import upop from 'upop';
 import 'upop/dist/upop.css';
 import './App.css';
+import { 
+  INDUSTRIES, 
+  getNextAssetCost, 
+  getAssetEfficiencyGain, 
+  ASSETS_BY_INDUSTRY, 
+  getMaintenanceCost, 
+  GOVERNMENTS, 
+  getGovPeMultiplier 
+} from './options';
 
-// Industry templates
-const INDUSTRIES = {
-  industrial: {
-    name: "Establecimiento Industrial",
-    cash: 80000,
-    employees: 3,
-    clients: 40,
-    efficiency: 40,
-    innovation: 10,
-    reputation: 50,
-    contacts: 5,
-    baseMargin: 1000,
-    baseOpCost: 700,
-    fixedOpCost: 12000,
-    capacityPerEmployee: 15,
-    description: "Producción y manufactura pesada. Sensible a aranceles, insumos y maquinarias."
-  },
-  software: {
-    name: "Consultora de Software",
-    cash: 80000,
-    employees: 2,
-    clients: 35,
-    efficiency: 20,
-    innovation: 40,
-    reputation: 60,
-    contacts: 10,
-    baseMargin: 1600,
-    baseOpCost: 1100,
-    fixedOpCost: 10000,
-    capacityPerEmployee: 20,
-    description: "Servicios de tecnología. Rápido crecimiento privado, pero expuesta a la fuga de talentos."
-  },
-  comercio: {
-    name: "Distribuidora Comercial",
-    cash: 60000,
-    employees: 2,
-    clients: 120,
-    efficiency: 50,
-    innovation: 5,
-    reputation: 50,
-    contacts: 15,
-    baseMargin: 300,
-    baseOpCost: 220,
-    fixedOpCost: 15000,
-    capacityPerEmployee: 80,
-    description: "Importación y volumen masivo. Extremadamente sensible a devaluaciones y trabas aduaneras."
-  },
-  finanzas: {
-    name: "Mesa de Dinero",
-    cash: 90000,
-    employees: 1,
-    clients: 8,
-    efficiency: 10,
-    innovation: 20,
-    reputation: 40,
-    contacts: 20,
-    baseMargin: 4000,
-    baseOpCost: 3200,
-    fixedOpCost: 14000,
-    capacityPerEmployee: 10,
-    description: "Especulación y arbitraje financiero. Altísima volatilidad, dependiente de tasas."
-  },
-  construccion: {
-    name: "Constructora Urbana",
-    cash: 100000,
-    employees: 3,
-    clients: 20,
-    efficiency: 30,
-    innovation: 10,
-    reputation: 45,
-    contacts: 25,
-    baseMargin: 2000,
-    baseOpCost: 1400,
-    fixedOpCost: 18000,
-    capacityPerEmployee: 8,
-    description: "Obras civiles y licitaciones. Fuerte relación gremial y dependencia de fondos públicos."
-  },
-  agropecuario: {
-    name: "Establecimiento Agropecuario",
-    cash: 70000,
-    employees: 4,
-    clients: 15,
-    efficiency: 35,
-    innovation: 15,
-    reputation: 55,
-    contacts: 10,
-    baseMargin: 2200,
-    baseOpCost: 1600,
-    fixedOpCost: 14000,
-    capacityPerEmployee: 5,
-    description: "Cultivo de granos y ganadería. Muy sensible a las retenciones, sequías y precios internacionales."
-  }
+const scaleText = (text, scale) => {
+  if (typeof text !== 'string') return text;
+  return text.replace(/\$([0-9]{1,3}(\.[0-9]{3})*)/g, (match, p1) => {
+    const number = parseInt(p1.replace(/\./g, ''));
+    if (isNaN(number)) return match;
+    const scaled = number * scale;
+    return '$' + scaled.toLocaleString();
+  });
 };
-
-// Calcula el costo de la próxima unidad de activo (rendimientos decrecientes)
-// Base $80k, +$20k por cada activo ya comprado
-const getNextAssetCost = (machineryCount) => Math.floor(80000 + machineryCount * 20000);
-
-// Eficiencia ganada por un activo: rendimientos decrecientes
-// 1er activo: +20%, 2do: +15%, 3ro: +12%, luego ~10, 8, 6... mínimo 4
-const getAssetEfficiencyGain = (machineryCount) => {
-  const gains = [20, 15, 12, 10, 9, 8, 7, 6, 5];
-  return gains[Math.min(machineryCount, gains.length - 1)] ?? 4;
-};
-
-const ASSETS_BY_INDUSTRY = {
-  industrial: {
-    singular: "Máquina Industrial",
-    plural: "Activos en Maquinarias",
-    emoji: "🏭",
-    baseBtnLabel: "🏭 Comprar Máquina",
-    confirmText: (cost, gain) => `¿Deseas comprar maquinaria pesada por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
-    successMsg: "¡Maquinaria adquirida e instalada!",
-    historyMsg: (cost, gain) => `Compraste maquinaria industrial ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
-  },
-  software: {
-    singular: "Servidor Cloud",
-    plural: "Servidores / Servidores Cloud",
-    emoji: "🖥️",
-    baseBtnLabel: "🖥️ Adquirir Servidores",
-    confirmText: (cost, gain) => `¿Deseas adquirir infraestructura y servidores cloud por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
-    successMsg: "¡Servidores Cloud adquiridos y configurados!",
-    historyMsg: (cost, gain) => `Adquiriste servidores cloud ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
-  },
-  comercio: {
-    singular: "Sucursal / Depósito",
-    plural: "Sucursales / Depósitos",
-    emoji: "🏪",
-    baseBtnLabel: "🏪 Expandir Sucursal",
-    confirmText: (cost, gain) => `¿Deseas abrir o expandir una sucursal y centro de distribución por $${cost.toLocaleString()}? Mejorará tu eficiencia logística en +${gain}%.`,
-    successMsg: "¡Sucursal inaugurada y operativa!",
-    historyMsg: (cost, gain) => `Expandiste una nueva sucursal ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
-  },
-  finanzas: {
-    singular: "Terminal de Bolsa / Servidor",
-    plural: "Terminales Financieras / Servidores",
-    emoji: "📈",
-    baseBtnLabel: "📈 Adquirir Terminal",
-    confirmText: (cost, gain) => `¿Deseas licenciar una terminal financiera avanzada por $${cost.toLocaleString()}? Aumentará tu eficiencia operativa en +${gain}%.`,
-    successMsg: "¡Terminal financiera integrada!",
-    historyMsg: (cost, gain) => `Licenciaste terminales financieras ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
-  },
-  construccion: {
-    singular: "Maquinaria Vial",
-    plural: "Equipos de Obra",
-    emoji: "🚜",
-    baseBtnLabel: "🚜 Comprar Maquinaria",
-    confirmText: (cost, gain) => `¿Deseas comprar maquinaria vial pesada por $${cost.toLocaleString()}? Aumentará tu eficiencia de obra en +${gain}%.`,
-    successMsg: "¡Maquinaria vial incorporada a la flota!",
-    historyMsg: (cost, gain) => `Compraste maquinaria vial ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
-  },
-  agropecuario: {
-    singular: "Tractor / Cosechadora",
-    plural: "Flota de Tractores",
-    emoji: "🌾",
-    baseBtnLabel: "🌾 Comprar Tractor",
-    confirmText: (cost, gain) => `¿Deseas adquirir una cosechadora avanzada por $${cost.toLocaleString()}? Aumentará tu eficiencia de siembra en +${gain}%.`,
-    successMsg: "¡Cosechadora agrícola adquirida y lista para la siembra!",
-    historyMsg: (cost, gain) => `Compraste cosechadora agrícola ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
-  }
-};
-
-// Costo de mantenimiento preventivo: 3% del valor total de activos
-const getMaintenanceCost = (machineryCount) => Math.floor(machineryCount * 80000 * 0.03);
-
-const GOVERNMENTS = {
-  Liberalismo: {
-    name: "Liberalismo",
-    taxRate: 0.10,
-    interestRate: 0.02,
-    tendersChance: 0.20,
-    bribeEfficiency: 0.20,
-    badgeClass: "gov-liberal",
-    taxRatePct: 10,
-    interestPct: 2,
-    description: "Impuestos mínimos, libre mercado absoluto, pocas licitaciones estatales. Sindicatos débiles."
-  },
-  Radicalismo: {
-    name: "Radicalismo",
-    taxRate: 0.22,
-    interestRate: 0.04,
-    tendersChance: 0.50,
-    bribeEfficiency: 0.50,
-    badgeClass: "gov-radical",
-    taxRatePct: 22,
-    interestPct: 4,
-    description: "Moderación fiscal, licitaciones transparentes, sindicatos institucionalizados. Coimas con doble penalidad."
-  },
-  Justicialismo: {
-    name: "Justicialismo",
-    taxRate: 0.30,
-    interestRate: 0.07,
-    tendersChance: 0.85,
-    bribeEfficiency: 1.20,
-    badgeClass: "gov-justicialista",
-    taxRatePct: 30,
-    interestPct: 7,
-    description: "Fuerte gasto público, licitaciones abundantes, sindicatos poderosos (paros frecuentes) y alta inflación."
-  },
-  Comunismo: {
-    name: "Comunismo",
-    taxRate: 0.45,
-    interestRate: 0.12,
-    tendersChance: 1.00,
-    bribeEfficiency: 1.50,
-    badgeClass: "gov-comunismo",
-    taxRatePct: 45,
-    interestPct: 12,
-    description: "Economía planificada. Licitaciones forzosas, salarios estatales fijos, fuga masiva de clientes privados (-5% mes)."
-  },
-  Provincianismo: {
-    name: "Provincianismo",
-    taxRate: 0.18,
-    interestRate: 0.035,
-    tendersChance: 0.65,
-    bribeEfficiency: 0.90,
-    badgeClass: "gov-provincial",
-    taxRatePct: 18,
-    interestPct: 3.5,
-    description: "Foco regional, subsidios fáciles, rebaja tributaria (-5%) para industria y construcción."
-  }
-};
-
-const getGovPeMultiplier = (govType) => {
-  if (govType === "Liberalismo") return 1.20;
-  if (govType === "Radicalismo") return 1.00;
-  if (govType === "Provincianismo") return 0.95;
-  if (govType === "Justicialismo") return 0.70;
-  if (govType === "Comunismo") return 0.25;
-  return 1.00;
-};
-
-
-
 
 const calculateElectionOdds = (state) => {
   // Base odds
@@ -339,6 +123,9 @@ const DEFAULT_STATE = {
   machineryCount: 0,
   usedEventIds: [],
   panamaTaxShield: false,
+  hedgedCash: 0,
+  rawMaterialStock: 2,
+  taxPlanningEnabled: false,
 
   // Annual balance accumulators
   annualRevenue: 0,
@@ -502,16 +289,19 @@ export default function App() {
 
   // Generates a public tender open for bids
   const generateTender = (currentState) => {
-    if (currentState.governmentType === "Intervencionista" || Math.random() < 0.45) {
-      const budget = 180000 + Math.floor(Math.random() * 220000);
+    if (["Justicialismo", "Comunismo"].includes(currentState.governmentType) || Math.random() < 0.45) {
+      const netAssets = currentState.cash + (currentState.hedgedCash || 0) + (currentState.machineryCount * 80000) - currentState.debt;
+      const scale = Math.max(1, Math.floor(netAssets / 120000));
+      const baseBudget = 180000 + Math.floor(Math.random() * 220000);
+      const budget = baseBudget * scale;
       setOpenTender({
         id: Math.floor(Math.random() * 10000),
-        title: currentState.businessType === "construccion" ? "Pavimentación Avenida Rivadavia" :
-               currentState.businessType === "software" ? "Digitalización Catastro Tributario" :
-               currentState.businessType === "industrial" ? "Estructuras Metálicas para Escuela" :
-               currentState.businessType === "comercio" ? "Distribución Bolsones de Alimentos" :
-               currentState.businessType === "agropecuario" ? "Abastecimiento de Trigo y Granos del Estado" :
-               "Bonos de Deuda del Estado Soberano",
+        title: currentState.businessType === "construccion" ? "Pavimentación Vial Regional" :
+               currentState.businessType === "software" ? "Sistemas de Catastro Tributario" :
+               currentState.businessType === "industrial" ? "Lote de Estructuras Modulares" :
+               currentState.businessType === "comercio" ? "Suministro de Logística de Alimentos" :
+               currentState.businessType === "agropecuario" ? "Abastecimiento Agropecuario del Estado" :
+               "Bonos de Deuda Soberana",
         budget,
         duration: 12,
         payoutPerMonth: Math.floor((budget * 1.1) / 12)
@@ -545,7 +335,9 @@ export default function App() {
       return;
     }
 
-    const bidPrepCost = 8000;
+    const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+    const scale = Math.max(1, Math.floor(netAssets / 120000));
+    const bidPrepCost = 8000 * scale;
     const liveOdds = calculateLiveOdds() / 100;
     const win = Math.random() < liveOdds;
 
@@ -554,8 +346,8 @@ export default function App() {
       nextState.cash -= (bidPrepCost + bribeAmount);
       
       if (bribeAmount > 0) {
-        nextState.corruptionRisk = Math.min(100, nextState.corruptionRisk + Math.floor(bribeAmount / 4500) + 5);
-        nextState.contacts = Math.min(100, nextState.contacts + Math.floor(bribeAmount / 6000) + 3);
+        nextState.corruptionRisk = Math.min(100, nextState.corruptionRisk + Math.floor(bribeAmount / (4500 * scale)) + 5);
+        nextState.contacts = Math.min(100, nextState.contacts + Math.floor(bribeAmount / (6000 * scale)) + 3);
         nextState.stateDependence = Math.min(100, nextState.stateDependence + 10);
       }
 
@@ -588,7 +380,7 @@ export default function App() {
       upop.toast.warning("No tenés suficientes contactos políticos.");
       return;
     }
-    if (state.governmentType !== "Intervencionista") {
+    if (!["Justicialismo", "Comunismo"].includes(state.governmentType)) {
       upop.toast.warning("Este gobierno no otorga subsidios discrecionales.");
       return;
     }
@@ -661,41 +453,48 @@ export default function App() {
   };
 
   // Buying machinery/assets — diminishing returns on efficiency, scaling cost
-  const confirmBuyAsset = () => {
+  const confirmBuyAsset = (count = 1) => {
     const assetDef = ASSETS_BY_INDUSTRY[state.businessType] || ASSETS_BY_INDUSTRY.industrial;
-    const cost = getNextAssetCost(state.machineryCount);
-    const gain = getAssetEfficiencyGain(state.machineryCount);
-    if (state.cash < cost) {
-      upop.toast.warning(`Falta capital para esta inversión ($${cost.toLocaleString()}).`);
+    let totalCost = 0;
+    let totalGain = 0;
+    for (let i = 0; i < count; i++) {
+      totalCost += getNextAssetCost(state.machineryCount + i);
+      totalGain += getAssetEfficiencyGain(state.machineryCount + i);
+    }
+    
+    if (state.cash < totalCost) {
+      upop.toast.warning(`Falta capital para esta inversión ($${totalCost.toLocaleString()}).`);
       return;
     }
-    const confirmMsg = typeof assetDef.confirmText === 'function'
-      ? assetDef.confirmText(cost, gain)
-      : assetDef.confirmText;
-    upop.confirm.success(confirmMsg, {
+    
+    const assetName = count === 1 ? (assetDef.singular || "activo") : (assetDef.plural || "activos");
+    upop.confirm.success(`¿Invertir $${totalCost.toLocaleString()} en comprar x${count} ${assetName}? Sube eficiencia en +${totalGain}%.`, {
       textoAceptar: "Invertir",
       textoCancelar: "Cancelar",
-      onConfirm: () => handleBuyAsset()
+      onConfirm: () => handleBuyAsset(count)
     });
   };
 
-  const handleBuyAsset = () => {
+  const handleBuyAsset = (count = 1) => {
     setState(prev => {
       const nextState = { ...prev };
       const assetDef = ASSETS_BY_INDUSTRY[prev.businessType] || ASSETS_BY_INDUSTRY.industrial;
-      const cost = getNextAssetCost(prev.machineryCount);
-      const gain = getAssetEfficiencyGain(prev.machineryCount);
-      nextState.cash -= cost;
-      nextState.machineryCount += 1;
-      // Efficiency can go beyond 100 — represents automation/advanced optimization (cap: 200)
-      nextState.efficiency = Math.min(200, nextState.efficiency + gain);
-      nextState.independence = Math.min(100, nextState.independence + 5);
-      const msg = typeof assetDef.historyMsg === 'function'
-        ? assetDef.historyMsg(cost, gain)
-        : assetDef.historyMsg;
-      nextState.historyLog.unshift(`[Activos] ${msg}`);
+      let totalCost = 0;
+      let totalGain = 0;
+      for (let i = 0; i < count; i++) {
+        totalCost += getNextAssetCost(prev.machineryCount + i);
+        totalGain += getAssetEfficiencyGain(prev.machineryCount + i);
+      }
+      
+      nextState.cash -= totalCost;
+      nextState.machineryCount += count;
+      nextState.efficiency = Math.min(200, nextState.efficiency + totalGain);
+      nextState.independence = Math.min(100, nextState.independence + (5 * count));
+      
+      const assetName = count === 1 ? (assetDef.singular || "activo") : (assetDef.plural || "activos");
+      nextState.historyLog.unshift(`[Activos] Compraste x${count} ${assetName} por $${totalCost.toLocaleString()}.`);
       saveState(nextState);
-      upop.toast.success(assetDef.successMsg);
+      upop.toast.success(`Inversión completada: x${count} ${assetName} incorporados.`);
       return nextState;
     });
   };
@@ -736,51 +535,145 @@ export default function App() {
     });
   };
 
-  // Hiring employees (using confirm)
-  const confirmHireEmployee = () => {
-    upop.confirm.success("¿Deseas contratar un operario adicional? Aumentará tus costos fijos de nómina mensuales.", {
-      textoAceptar: "Contratar",
-      textoCancelar: "Cancelar",
-      onConfirm: () => handleHireEmployee()
+  const confirmBuyRawMaterials = () => {
+    const cost = 8000 + state.employees * 1500;
+    if (state.rawMaterialStock >= 6) {
+      upop.toast.warning("Ya tenés el depósito lleno de materias primas (límite de 6 meses).");
+      return;
+    }
+    if (state.cash < cost) {
+      upop.toast.warning(`Falta caja para acopiar insumos ($${cost.toLocaleString()}).`);
+      return;
+    }
+    upop.confirm.info(
+      `¿Adquirir 1 mes adicional de materias primas y repuestos por $${cost.toLocaleString()}? Protege la producción contra el cepo y cortes de cadena de valor.`,
+      {
+        textoAceptar: "Acopiar",
+        textoCancelar: "Cancelar",
+        onConfirm: () => handleBuyRawMaterials()
+      }
+    );
+  };
+
+  const handleBuyRawMaterials = () => {
+    setState(prev => {
+      const nextState = { ...prev };
+      const cost = 8000 + prev.employees * 1500;
+      nextState.cash -= cost;
+      nextState.rawMaterialStock = Math.min(6, (nextState.rawMaterialStock || 0) + 1);
+      nextState.historyLog.unshift(`[Abasto] Compraste 1 mes de stock de materias primas e insumos (-$${cost.toLocaleString()}).`);
+      saveState(nextState);
+      upop.toast.success("Insumos acopiados correctamente.");
+      return nextState;
     });
   };
 
-  const handleHireEmployee = () => {
+  const handleHedgeDeposit = (amount) => {
     setState(prev => {
       const nextState = { ...prev };
-      nextState.employees += 1;
-      nextState.historyLog.unshift(`[Personal] Nuevo empleado contratado.`);
+      const actualAmount = amount === 'all' ? prev.cash : amount;
+      if (actualAmount <= 0) {
+        upop.toast.warning("No tenés efectivo libre.");
+        return prev;
+      }
+      if (prev.cash < actualAmount) {
+        upop.toast.warning("No tenés suficiente efectivo libre.");
+        return prev;
+      }
+      
+      nextState.cash -= actualAmount;
+      nextState.hedgedCash = (nextState.hedgedCash || 0) + actualAmount;
+      nextState.historyLog.unshift(`[Mesa] Colocaste $${actualAmount.toLocaleString()} en fondos de cobertura protegidos contra inflación.`);
       saveState(nextState);
-      upop.toast.success("Operario contratado.");
+      upop.toast.success("Fondos invertidos en cobertura.");
+      return nextState;
+    });
+  };
+
+  const handleHedgeWithdraw = (amount) => {
+    setState(prev => {
+      const nextState = { ...prev };
+      const availablePrev = prev.hedgedCash || 0;
+      const actualAmount = amount === 'all' ? availablePrev : amount;
+      if (actualAmount <= 0) {
+        upop.toast.warning("No tenés fondos invertidos en cobertura.");
+        return prev;
+      }
+      if (actualAmount > availablePrev) {
+        upop.toast.warning("El monto supera el saldo invertido.");
+        return prev;
+      }
+      
+      nextState.hedgedCash = availablePrev - actualAmount;
+      nextState.cash += actualAmount;
+      nextState.historyLog.unshift(`[Mesa] Rescataste $${actualAmount.toLocaleString()} de cobertura a tu caja líquida.`);
+      saveState(nextState);
+      upop.toast.success("Fondos rescatados.");
+      return nextState;
+    });
+  };
+
+  const handleToggleTaxPlanning = () => {
+    setState(prev => {
+      const nextState = { ...prev };
+      nextState.taxPlanningEnabled = !prev.taxPlanningEnabled;
+      const status = nextState.taxPlanningEnabled ? "ACTIVADA" : "DESACTIVADA";
+      nextState.historyLog.unshift(`[Impuestos] Asesoría y planificación fiscal corporativa ${status}. Costo mensual: $3.000.`);
+      saveState(nextState);
+      upop.toast.success(`Planificación fiscal ${nextState.taxPlanningEnabled ? 'contratada' : 'cancelada'}.`);
+      return nextState;
+    });
+  };
+
+
+
+  // Hiring employees (using confirm)
+  const confirmHireEmployee = (count = 1) => {
+    upop.confirm.success(`¿Deseas contratar x${count} operarios? Aumentará tus costos fijos de nómina mensuales.`, {
+      textoAceptar: "Contratar",
+      textoCancelar: "Cancelar",
+      onConfirm: () => handleHireEmployee(count)
+    });
+  };
+
+  const handleHireEmployee = (count = 1) => {
+    setState(prev => {
+      const nextState = { ...prev };
+      nextState.employees += count;
+      nextState.historyLog.unshift(`[Personal] Contrataste x${count} operarios.`);
+      saveState(nextState);
+      upop.toast.success(`x${count} operarios contratados.`);
       return nextState;
     });
   };
 
   // Firing employees (using confirm)
-  const confirmFireEmployee = () => {
-    if (state.employees <= 1) {
-      upop.toast.warning("No podés despedir a tu último empleado.");
+  const confirmFireEmployee = (count = 1) => {
+    if (state.employees <= count) {
+      upop.toast.warning("No podés despedir a todos tus empleados.");
       return;
     }
-    if (state.cash < 3000) {
-      upop.toast.warning("No tenés caja para pagar la indemnización ($3.000).");
+    const cost = 3000 * count;
+    if (state.cash < cost) {
+      upop.toast.warning(`No tenés caja para pagar la indemnización ($${cost.toLocaleString()}).`);
       return;
     }
-    upop.confirm.error("¿Deseas despedir un operario? Pagarás una indemnización de $3.000 inmediatamente.", {
+    upop.confirm.error(`¿Deseas despedir x${count} operarios? Pagarás una indemnización de $${cost.toLocaleString()} inmediatamente.`, {
       textoAceptar: "Despedir",
       textoCancelar: "Cancelar",
-      onConfirm: () => handleFireEmployee()
+      onConfirm: () => handleFireEmployee(count)
     });
   };
 
-  const handleFireEmployee = () => {
+  const handleFireEmployee = (count = 1) => {
     setState(prev => {
       const nextState = { ...prev };
-      nextState.cash -= 3000;
-      nextState.employees -= 1;
-      nextState.historyLog.unshift(`[Personal] Empleado despedido. Indemnización pagada (-$3.000).`);
+      const cost = 3000 * count;
+      nextState.cash -= cost;
+      nextState.employees -= count;
+      nextState.historyLog.unshift(`[Personal] x${count} operarios despedidos. Indemnizaciones: -$${cost.toLocaleString()}.`);
       saveState(nextState);
-      upop.toast.success("Operario despedido.");
+      upop.toast.success(`x${count} operarios despedidos.`);
       return nextState;
     });
   };
@@ -912,12 +805,11 @@ export default function App() {
     });
   };
 
-  // Random Event Picker
   const triggerRandomEvent = (currentState) => {
     let eligible = events.filter(ev => ev.trigger(currentState) && !currentState.usedEventIds.includes(ev.id));
     if (eligible.length === 0) {
-       currentState.usedEventIds = []; 
-       eligible = events.filter(ev => ev.trigger(currentState));
+       currentState.usedEventIds = currentState.usedEventIds.slice(-15); 
+       eligible = events.filter(ev => ev.trigger(currentState) && !currentState.usedEventIds.includes(ev.id));
     }
 
     if (eligible.length > 0) {
@@ -954,9 +846,23 @@ export default function App() {
       return;
     }
 
-    // 1. Resolve event option action
+    // 1. Resolve event option action with dynamic scale mapping
+    const oldCash = nextState.cash;
+    const oldDebt = nextState.debt;
     option.action(nextState);
-    const eventOutcome = option.outcomeText;
+    
+    const cashDelta = nextState.cash - oldCash;
+    const debtDelta = nextState.debt - oldDebt;
+    
+    const isPersonal = currentEvent && currentEvent.category === "PERSONAL";
+    const netAssets = oldCash + (nextState.hedgedCash || 0) + (nextState.machineryCount * 80000) - oldDebt;
+    const scale = isPersonal ? 1 : Math.max(1, Math.floor(netAssets / 120000));
+    
+    nextState.cash = oldCash + (cashDelta * scale);
+    nextState.debt = oldDebt + (debtDelta * scale);
+    
+    const rawOutcome = typeof option.outcomeText === 'function' ? option.outcomeText(nextState) : option.outcomeText;
+    const eventOutcome = scaleText(rawOutcome, scale);
 
     if (currentEvent && currentEvent.id !== 0) {
       nextState.usedEventIds = [...nextState.usedEventIds, currentEvent.id];
@@ -1001,11 +907,23 @@ export default function App() {
     // Expenses (Estanflación increases operating costs by 30%. Justicialismo by 15%)
     const salaryCost = nextState.employees * nextState.salaryPerEmployee;
     
+    // Raw materials stock check & penalty
+    let supplyShortagePenalty = false;
+    if (nextState.rawMaterialStock > 0) {
+      nextState.rawMaterialStock -= 1;
+    } else {
+      const isCrisis = ["Recesión", "Estanflación"].includes(nextState.economicCycle);
+      const isInterventor = ["Justicialismo", "Comunismo"].includes(nextState.governmentType);
+      if (isCrisis || isInterventor) {
+        supplyShortagePenalty = true;
+      }
+    }
+
     let opCostMultiplier = nextState.economicCycle === "Estanflación" ? 1.30 : 1.0;
     if (nextState.governmentType === "Justicialismo") opCostMultiplier *= 1.15; // labor overheads
     
-    // Scale fixed operating cost based on current company stage
-    const tempNetAssets = nextState.cash + (nextState.machineryCount * 80000) - nextState.debt;
+    // Scale fixed operating cost based on current company stage (includes hedgedCash in net worth)
+    const tempNetAssets = nextState.cash + (nextState.hedgedCash || 0) + (nextState.machineryCount * 80000) - nextState.debt;
     const stageMultiplier = (() => {
       if (tempNetAssets < 150000) return 1.0;
       if (tempNetAssets < 500000) return 1.5;
@@ -1018,7 +936,11 @@ export default function App() {
     const stageFixedCost = Math.floor(fixedCostBase * stageMultiplier);
     // Efficiency now scales up to 200. At 100 = -37.5% costs, at 200 = -62.5% costs (diminishing returns curve)
     const efficiencyFactor = Math.max(0.375, 1 - (nextState.efficiency / 320));
-    const variableCost = Math.floor(servedClients * template.baseOpCost * opCostMultiplier * efficiencyFactor);
+    let variableCost = Math.floor(servedClients * template.baseOpCost * opCostMultiplier * efficiencyFactor);
+    if (supplyShortagePenalty) {
+      variableCost = Math.floor(variableCost * 1.25); // +25% cost of goods sold due to supply issues
+      nextState.efficiency = Math.max(5, nextState.efficiency - 2);
+    }
     const operatingCost = stageFixedCost + variableCost;
     
     // Tax Shield check (using Gov taxRate)
@@ -1029,6 +951,10 @@ export default function App() {
     if (nextState.panamaTaxShield) {
       taxRate = taxRate * 0.5;
     }
+    if (nextState.taxPlanningEnabled) {
+      taxRate = Math.max(0.02, taxRate - 0.05); // -5% legal tax reduction
+      nextState.corruptionRisk = Math.max(0, nextState.corruptionRisk - 1);
+    }
     const taxCost = Math.floor(totalRevenue * taxRate);
     
     // Interest rates (using Gov interestRate + cycle premium)
@@ -1036,7 +962,8 @@ export default function App() {
     const interestRate = nextState.economicCycle === "Estanflación" ? interestBaseRate + 0.03 : interestBaseRate;
     const interestCost = Math.floor(nextState.debt * interestRate);
 
-    const totalExpenses = salaryCost + operatingCost + taxCost + interestCost + Number(nextState.rndInvestment);
+    const taxPlanningCost = nextState.taxPlanningEnabled ? 3000 : 0;
+    const totalExpenses = salaryCost + operatingCost + taxCost + interestCost + Number(nextState.rndInvestment) + taxPlanningCost;
     let netProfit = totalRevenue - totalExpenses;
 
     // 3. SHAREHOLDER DIVIDENDS & SHARE PRICE FLUCTUATIONS
@@ -1048,6 +975,25 @@ export default function App() {
       nextState.historyLog.unshift(`[Bolsa] Pagaste $${dividendCost.toLocaleString()} en dividendos al sector público.`);
     } else {
       nextState.cash += netProfit;
+    }
+
+    // Hedge yield & Inflation loss process
+    const hedgeYield = nextState.economicCycle === "Estanflación" ? 0.0075 : 0.0045;
+    const yieldAmount = Math.floor((nextState.hedgedCash || 0) * hedgeYield);
+    if (yieldAmount > 0) {
+      nextState.hedgedCash += yieldAmount;
+      nextState.historyLog.unshift(`[Inversión] Tus fondos de cobertura rindieron +$${yieldAmount.toLocaleString()}.`);
+    }
+
+    const inflationRate = nextState.governmentType === "Comunismo" ? 0.05 : nextState.governmentType === "Justicialismo" ? 0.03 : nextState.economicCycle === "Estanflación" ? 0.04 : 0.0;
+    if (inflationRate > 0 && nextState.cash > 0) {
+      const loss = Math.floor(nextState.cash * inflationRate);
+      nextState.cash -= loss;
+      nextState.historyLog.unshift(`[Inflación] La inflación devoró -$${loss.toLocaleString()} de tu caja líquida en pesos.`);
+    }
+
+    if (supplyShortagePenalty) {
+      nextState.historyLog.unshift(`[Abasto] Desabastecimiento de insumos. +25% costos variables y -2% eficiencia.`);
     }
 
     // Update share price drift (realistic P/E-based model + market noise)
@@ -1153,7 +1099,7 @@ export default function App() {
     nextState.historyLog.unshift(`[Balance Mes ${nextState.turn}] Ingresos: $${totalRevenue} | Gastos: $${totalExpenses} | Neto: ${netProfit >= 0 ? '+' : ''}$${netProfit}.`);
 
     // Check bankrupt — no upper victory limit (open-ended sandbox)
-    const nextNetAssets = nextState.cash + (nextState.machineryCount * 80000) - nextState.debt;
+    const nextNetAssets = nextState.cash + (nextState.hedgedCash || 0) + (nextState.machineryCount * 80000) - nextState.debt;
     if (nextState.cash < -500000) {
       setGameOverReason("bankruptcy");
       setShowGameOverModal(true);
@@ -1307,7 +1253,7 @@ export default function App() {
     setActiveTab("tab-event");
   };
 
-  const netAssetsVal = state.cash + (state.machineryCount * 80000) - state.debt;
+  const netAssetsVal = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
 
   // Live monthly projection calculations (shown in left sidebar)
   const template = INDUSTRIES[state.businessType];
@@ -1326,7 +1272,8 @@ export default function App() {
   const projTotalRevenue = projClientRevenue + projTenderRevenue;
   const projSalaryCost = state.employees * state.salaryPerEmployee;
   
-  const projOpCostMultiplier = state.economicCycle === "Estanflación" ? 1.30 : 1.0;
+  let projOpCostMultiplier = state.economicCycle === "Estanflación" ? 1.30 : 1.0;
+  if (state.governmentType === "Justicialismo") projOpCostMultiplier *= 1.15;
   const projStageMultiplier = (() => {
     if (netAssetsVal < 150000) return 1.0;
     if (netAssetsVal < 500000) return 1.5;
@@ -1337,7 +1284,11 @@ export default function App() {
   
   const projFixedCostBase = template?.fixedOpCost || 10000;
   const projStageFixedCost = Math.floor(projFixedCostBase * projStageMultiplier);
-  const projVariableCost = template ? Math.floor(projServedClients * template.baseOpCost * projOpCostMultiplier * Math.max(0.375, 1 - state.efficiency / 320)) : 0;
+  let projVariableCost = template ? Math.floor(projServedClients * template.baseOpCost * projOpCostMultiplier * Math.max(0.375, 1 - state.efficiency / 320)) : 0;
+  const willPenaltyApply = (state.rawMaterialStock || 0) === 0 && (["Recesión", "Estanflación"].includes(state.economicCycle) || ["Justicialismo", "Comunismo"].includes(state.governmentType));
+  if (willPenaltyApply) {
+    projVariableCost = Math.floor(projVariableCost * 1.25);
+  }
   const projOpCost = projStageFixedCost + projVariableCost;
   
   const projTaxRate = (() => {
@@ -1346,7 +1297,13 @@ export default function App() {
     if (state.governmentType === "Provincianismo" && (state.businessType === "industrial" || state.businessType === "construccion")) {
       rate = Math.max(0.05, rate - 0.05);
     }
-    return state.panamaTaxShield ? rate * 0.5 : rate;
+    if (state.panamaTaxShield) {
+      rate = rate * 0.5;
+    }
+    if (state.taxPlanningEnabled) {
+      rate = Math.max(0.02, rate - 0.05);
+    }
+    return rate;
   })();
   const projTaxCost = Math.floor(projTotalRevenue * projTaxRate);
   
@@ -1357,8 +1314,9 @@ export default function App() {
   const projInterestRate = state.economicCycle === "Estanflación" ? projInterestBaseRate + 0.03 : projInterestBaseRate;
   const projInterestCost = Math.floor(state.debt * projInterestRate);
   
+  const projTaxPlanningCost = state.taxPlanningEnabled ? 3000 : 0;
   const projRndCost = Number(state.rndInvestment);
-  const projTotalCost = projSalaryCost + projOpCost + projTaxCost + projInterestCost + projRndCost;
+  const projTotalCost = projSalaryCost + projOpCost + projTaxCost + projInterestCost + projRndCost + projTaxPlanningCost;
   const projNet = projTotalRevenue - projTotalCost;
 
   // Valuation helper (Estimated Market Cap or Exchange Market Cap)
@@ -1400,9 +1358,13 @@ export default function App() {
       return [];
     }
     
+    const isPersonal = currentEvent && currentEvent.category === "PERSONAL";
+    const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+    const scale = isPersonal ? 1 : Math.max(1, Math.floor(netAssets / 120000));
+    
     const impacts = [];
     if (testState.cash !== preCash) {
-      const diff = testState.cash - preCash;
+      const diff = (testState.cash - preCash) * scale;
       impacts.push(`${diff >= 0 ? '+' : ''}$${diff.toLocaleString()} Caja`);
     }
     if (testState.reputation !== preRep) {
@@ -1434,9 +1396,10 @@ export default function App() {
       impacts.push(`${diff > 0 ? '+' : ''}${diff} Clientes`);
     }
     if (testState.debt !== preDebt) {
-      const diff = testState.debt - preDebt;
-      impacts.push(`${diff >= 0 ? '+' : ''}$${diff.toLocaleString()} Deuda`);
+      const diff = (testState.debt - preDebt) * scale;
+      impacts.push(`${diff > 0 ? '+' : '−'}$${Math.abs(diff).toLocaleString()} Deuda`);
     }
+
     
     return impacts;
   };
@@ -1638,6 +1601,16 @@ export default function App() {
                     <span className="stat-label">Deuda Acumulada:</span>
                     <span className="stat-value text-negative">${state.debt.toLocaleString()}</span>
                   </div>
+                  {state.hedgedCash > 0 && (
+                    <div className="stat-row">
+                      <span className="stat-label">Fondo de Cobertura:</span>
+                      <span className="stat-value text-positive">${state.hedgedCash.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="stat-row">
+                    <span className="stat-label">Stock de Insumos:</span>
+                    <span className="stat-value text-info">{state.rawMaterialStock} meses</span>
+                  </div>
                   <div className="stat-row">
                     <span className="stat-label">Tasas Interés Deuda:</span>
                     <span className="stat-value text-warning">{currentInterest}% / mes</span>
@@ -1692,6 +1665,22 @@ export default function App() {
                     <span className="stat-label">− Impuestos ({finalTaxDisplayRate}%):</span>
                     <span className="stat-value text-negative">-${projTaxCost.toLocaleString()}</span>
                   </div>
+                  {state.taxPlanningEnabled && (
+                    <div className="stat-row">
+                      <span className="stat-label">− Planificación Fiscal:</span>
+                      <span className="stat-value text-negative">-$3.000</span>
+                    </div>
+                  )}
+                  {(() => {
+                    const inflationRate = state.governmentType === "Comunismo" ? 0.05 : state.governmentType === "Justicialismo" ? 0.03 : state.economicCycle === "Estanflación" ? 0.04 : 0.0;
+                    const loss = Math.floor(state.cash * inflationRate);
+                    return loss > 0 ? (
+                      <div className="stat-row">
+                        <span className="stat-label text-warning" title="Pérdida proyectada por no tener el dinero invertido en el Fondo de Cobertura">⚠️ Licuación pesos:</span>
+                        <span className="stat-value text-negative">-${loss.toLocaleString()}</span>
+                      </div>
+                    ) : null;
+                  })()}
                   {projInterestCost > 0 && (
                     <div className="stat-row">
                       <span className="stat-label">− Intereses Deuda:</span>
@@ -1771,18 +1760,49 @@ export default function App() {
                 {/* Asset investment button — clean & compact display to prevent wrapping */}
                 {(() => {
                   const assetDef = ASSETS_BY_INDUSTRY[state.businessType];
-                  const nextCost = getNextAssetCost(state.machineryCount);
-                  const nextGain = getAssetEfficiencyGain(state.machineryCount);
-                  const canAfford = state.cash >= nextCost;
+                  
+                  const getBulkCost = (cnt) => {
+                    let cost = 0;
+                    for (let i = 0; i < cnt; i++) {
+                      cost += getNextAssetCost(state.machineryCount + i);
+                    }
+                    return cost;
+                  };
+
+                  const canAfford1 = state.cash >= getBulkCost(1);
+                  const canAfford5 = state.cash >= getBulkCost(5);
+                  const canAfford10 = state.cash >= getBulkCost(10);
+
                   return (
-                    <button
-                      onClick={confirmBuyAsset}
-                      className={`btn w-100 ${canAfford ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ opacity: canAfford ? 1 : 0.6 }}
-                      title={`Costo: $${nextCost.toLocaleString()} | Eficiencia: +${nextGain}%`}
-                    >
-                      {assetDef?.baseBtnLabel || '🏭 Comprar Activo'} (${nextCost.toLocaleString()})
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <span className="card-desc" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>🛒 Inversión en {assetDef?.plural || 'Activos'}</span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          onClick={() => confirmBuyAsset(1)}
+                          className={`btn btn-sm ${canAfford1 ? 'btn-primary' : 'btn-secondary'}`}
+                          style={{ flex: 1, padding: '6px 2px', fontSize: '0.75rem', opacity: canAfford1 ? 1 : 0.6 }}
+                          title={`Comprar 1 activo. Costo: $${getBulkCost(1).toLocaleString()}`}
+                        >
+                          x1
+                        </button>
+                        <button
+                          onClick={() => confirmBuyAsset(5)}
+                          className={`btn btn-sm ${canAfford5 ? 'btn-primary' : 'btn-secondary'}`}
+                          style={{ flex: 1, padding: '6px 2px', fontSize: '0.75rem', opacity: canAfford5 ? 1 : 0.6 }}
+                          title={`Comprar 5 activos. Costo: $${getBulkCost(5).toLocaleString()}`}
+                        >
+                          x5
+                        </button>
+                        <button
+                          onClick={() => confirmBuyAsset(10)}
+                          className={`btn btn-sm ${canAfford10 ? 'btn-primary' : 'btn-secondary'}`}
+                          style={{ flex: 1, padding: '6px 2px', fontSize: '0.75rem', opacity: canAfford10 ? 1 : 0.6 }}
+                          title={`Comprar 10 activos. Costo: $${getBulkCost(10).toLocaleString()}`}
+                        >
+                          x10
+                        </button>
+                      </div>
+                    </div>
                   );
                 })()}
                 {/* Mantenimiento preventivo — solo si hay activos */}
@@ -1811,7 +1831,7 @@ export default function App() {
                 <button 
                   onClick={confirmRequestSubsidy} 
                   className="btn btn-secondary w-100"
-                  disabled={state.contacts < 25 || state.governmentType !== 'Intervencionista'}
+                  disabled={state.contacts < 25 || !["Justicialismo", "Comunismo"].includes(state.governmentType)}
                 >
                   🤝 Solicitar Subsidio ($150k)
                 </button>
@@ -1860,13 +1880,19 @@ export default function App() {
                           <span className="event-category">{currentEvent.category}</span>
                           <h2 id="event-title">{currentEvent.title}</h2>
                         </div>
-                        <div className="event-body">
-                          <p>{typeof currentEvent.description === 'function' ? currentEvent.description(state) : currentEvent.description}</p>
-                        </div>
-                        <div className="event-options">
-                          {currentEvent.options.map((opt, idx) => {
-                            const isLocked = opt.condition ? !opt.condition(state) : false;
-                            const optText = typeof opt.text === 'function' ? opt.text(state) : opt.text;
+                        {(() => {
+                          const isPersonal = currentEvent && currentEvent.category === "PERSONAL";
+                          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+                          const scale = isPersonal ? 1 : Math.max(1, Math.floor(netAssets / 120000));
+                          return (
+                            <>
+                              <div className="event-body">
+                                <p>{scaleText(typeof currentEvent.description === 'function' ? currentEvent.description(state) : currentEvent.description, scale)}</p>
+                              </div>
+                              <div className="event-options">
+                                {currentEvent.options.map((opt, idx) => {
+                                  const isLocked = opt.condition ? !opt.condition(state) : false;
+                                  const optText = scaleText(typeof opt.text === 'function' ? opt.text(state) : opt.text, scale);
                             const impacts = getOptionImpact(opt);
                             return (
                               <button 
@@ -1923,7 +1949,10 @@ export default function App() {
                               </button>
                             );
                           })}
-                        </div>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     )}
 
@@ -2046,9 +2075,19 @@ export default function App() {
                         <h3>👥 Dotación de Empleados y Salario</h3>
                         <p className="card-desc">Gestiona tu equipo. Salarios generosos disparan el desempeño del personal y neutralizan huelgas.</p>
                         
-                        <div className="staff-actions">
-                          <button onClick={confirmHireEmployee} className="btn btn-success">👷 Contratar (+ $1.500/mes)</button>
-                          <button onClick={confirmFireEmployee} className="btn btn-danger">Despedir (-$3.000)</button>
+                        <div className="staff-actions-grid" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <strong style={{ fontSize: '0.85rem', minWidth: '80px', color: 'var(--text-secondary)' }}>Contratar:</strong>
+                            <button onClick={() => confirmHireEmployee(1)} className="btn btn-success btn-sm" style={{ flex: 1, padding: '6px' }}>x1</button>
+                            <button onClick={() => confirmHireEmployee(5)} className="btn btn-success btn-sm" style={{ flex: 1, padding: '6px' }}>x5</button>
+                            <button onClick={() => confirmHireEmployee(10)} className="btn btn-success btn-sm" style={{ flex: 1, padding: '6px' }}>x10</button>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <strong style={{ fontSize: '0.85rem', minWidth: '80px', color: 'var(--text-secondary)' }}>Despedir:</strong>
+                            <button onClick={() => confirmFireEmployee(1)} className="btn btn-danger btn-sm" style={{ flex: 1, padding: '6px' }}>x1</button>
+                            <button onClick={() => confirmFireEmployee(5)} className="btn btn-danger btn-sm" style={{ flex: 1, padding: '6px' }}>x5</button>
+                            <button onClick={() => confirmFireEmployee(10)} className="btn btn-danger btn-sm" style={{ flex: 1, padding: '6px' }}>x10</button>
+                          </div>
                         </div>
                         
                         <div className="slider-group mt-15">
@@ -2073,6 +2112,77 @@ export default function App() {
                           </span>
                         </div>
                       </div>
+
+                      {/* OPERACIONES Y ESTRATEGIA CORPORATIVA */}
+                      <div className="mgmt-card glass mb-15">
+                        <h3>💼 Estrategia Administrativa y Cobertura</h3>
+                        <p className="card-desc">Administra el inventario y protege los activos financieros de tu empresa de forma realista.</p>
+                        
+                        <div className="operations-grid" style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px' }}>
+                          
+                          {/* ACOPIO DE INSUMOS */}
+                          <div className="ops-row p-10" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <strong>📦 Acopio de Materias Primas:</strong>
+                              <span className="text-info">{state.rawMaterialStock} / 6 Meses</span>
+                            </div>
+                            <p className="card-desc" style={{ fontSize: '0.8rem', margin: '0 0 8px 0' }}>
+                              Previene paradas de fábrica e incrementos de costo de importaciones durante cepos o crisis cambiarias.
+                            </p>
+                            <button 
+                              onClick={confirmBuyRawMaterials} 
+                              className="btn btn-primary btn-sm"
+                              disabled={state.rawMaterialStock >= 6}
+                            >
+                              Acopiar 1 Mes (+${(8000 + state.employees * 1500).toLocaleString()})
+                            </button>
+                          </div>
+
+                          {/* MESA DE DINERO / COBERTURA */}
+                          <div className="ops-row p-10" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <strong>📈 Fondo de Cobertura (Letras/FCI):</strong>
+                              <span className="text-positive">${(state.hedgedCash || 0).toLocaleString()}</span>
+                            </div>
+                            <p className="card-desc" style={{ fontSize: '0.8rem', margin: '0 0 8px 0' }}>
+                              Los pesos líquidos en caja sufren depreciación mensual bajo alta inflación o Cepos. El fondo de cobertura los protege y rinde intereses mensuales.
+                            </p>
+                            <div className="hedge-buttons" style={{ display: 'flex', gap: '8px' }}>
+                              <button onClick={() => handleHedgeDeposit(20000)} className="btn btn-success btn-xs" disabled={state.cash < 20000}>
+                                Colocar $20.000
+                              </button>
+                              <button onClick={() => handleHedgeDeposit('all')} className="btn btn-success btn-xs" disabled={state.cash <= 0}>
+                                Colocar Todo
+                              </button>
+                              <button onClick={() => handleHedgeWithdraw('all')} className="btn btn-warning btn-xs" disabled={!state.hedgedCash || state.hedgedCash <= 0}>
+                                Rescatar Todo
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* PLANIFICACION FISCAL */}
+                          <div className="ops-row p-10">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <strong>⚖️ Asesoría & Planificación Fiscal:</strong>
+                              <span className={`badge ${state.taxPlanningEnabled ? 'bg-success' : 'bg-secondary'}`} style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: state.taxPlanningEnabled ? 'rgba(46, 204, 113, 0.2)' : 'rgba(255,255,255,0.1)' }}>
+                                {state.taxPlanningEnabled ? 'CONTRATADO' : 'INACTIVO'}
+                              </span>
+                            </div>
+                            <p className="card-desc" style={{ fontSize: '0.8rem', margin: '0 0 8px 0' }}>
+                              Contrata un estudio contable corporativo. Reduce la alícuota de impuesto de facturación un 5% y reduce los incrementos de riesgo judicial.
+                            </p>
+                            <button 
+                              onClick={handleToggleTaxPlanning} 
+                              className={`btn ${state.taxPlanningEnabled ? 'btn-danger' : 'btn-primary'} btn-sm`}
+                            >
+                              {state.taxPlanningEnabled ? 'Suspender Asesoría' : 'Contratar ($3.000/mes)'}
+                            </button>
+                          </div>
+
+                        </div>
+                      </div>
+
+
 
                     </div>
                   </div>
@@ -2162,7 +2272,7 @@ export default function App() {
                             <div className="tender-specs">
                               <div><strong>Presupuesto Oficial:</strong> ${openTender.budget.toLocaleString()}</div>
                               <div><strong>Contrato:</strong> 12 meses</div>
-                              <div><strong>Gastos Pliego:</strong> $8.000</div>
+                              <div><strong>Gastos Pliego:</strong> ${(8000 * Math.max(1, Math.floor((state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt) / 120000))).toLocaleString()}</div>
                             </div>
 
                             <div className="slider-group">
@@ -2182,12 +2292,12 @@ export default function App() {
                               <div className="slider-labels">
                                 <span>$0</span>
                                 <span className="text-state font-bold">${bribeAmount.toLocaleString()}</span>
-                                <span>$80.000</span>
+                                <span>${Math.floor(openTender.budget * 0.3).toLocaleString()}</span>
                               </div>
                               <input 
                                 type="range"
                                 min="0"
-                                max="80000"
+                                max={Math.floor(openTender.budget * 0.3)}
                                 step="5000"
                                 value={bribeAmount}
                                 onChange={(e) => setBribeAmount(parseInt(e.target.value))}

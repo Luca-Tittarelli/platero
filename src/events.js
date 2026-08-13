@@ -1,5 +1,8 @@
 // PLATERO - Events database representing 50 Argentine business events and conditional choices.
 
+const isIntervencionista = (gov) => ["Justicialismo", "Comunismo"].includes(gov);
+const isProMercado = (gov) => ["Liberalismo", "Provincianismo"].includes(gov);
+
 export const events = [
   {
     id: 1,
@@ -47,7 +50,7 @@ export const events = [
     title: "Cepo al Dólar",
     category: "POLÍTICA & MACRO",
     description: "El Banco Central anuncia restricciones severas para acceder al mercado de cambios formal. Tus proveedores de materias primas o insumos importados te dicen que no pueden entregar mercadería si no les pagás en moneda extranjera.",
-    trigger: (state) => state.governmentType === "Intervencionista" && state.turn > 2,
+    trigger: (state) => isIntervencionista(state.governmentType) && state.turn > 2,
     options: [
       {
         text: "Pagar a través de canales informales ('Dólar Blue') para no frenar la producción (-$20.000)",
@@ -246,7 +249,7 @@ export const events = [
     title: "Licitación de Obra Municipal",
     category: "LICITACIÓN",
     description: "La intendencia abre una licitación de urgencia para proveer insumos/servicios al hospital local. La licitación paga muy bien, pero exige participar rápido.",
-    trigger: (state) => state.governmentType === "Intervencionista" && state.cash >= 15000,
+    trigger: (state) => isIntervencionista(state.governmentType) && state.cash >= 15000,
     options: [
       {
         text: "Hacer una oferta honesta con un pliego técnico intachable (-$10.000)",
@@ -327,7 +330,7 @@ export const events = [
     title: "Subsidio Industrial Amigo",
     category: "POLÍTICA",
     description: "La Secretaría de Producción abre un registro para subsidios compensatorios no reembolsables de reactivación industrial. Solo hay cupo para empresas aliadas.",
-    trigger: (state) => state.contacts >= 20 && state.governmentType === "Intervencionista" && state.businessType === "industrial",
+    trigger: (state) => state.contacts >= 20 && isIntervencionista(state.governmentType) && state.businessType === "industrial",
     options: [
       {
         text: "Llamar al Director para ingresar tu CUIT en la lista de beneficiarios",
@@ -484,7 +487,7 @@ export const events = [
     title: "Moratoria Fiscal Impositiva",
     category: "POLÍTICA & FINANZAS",
     description: "El congreso sanciona una moratoria impositiva histórica. Permite regularizar deudas fiscales acumuladas sin intereses y con quitas del 50%. Ideal para ordenar los números.",
-    trigger: (state) => state.governmentType === "Intervencionista" && state.corruptionRisk > 20 && state.cash >= 30000,
+    trigger: (state) => isIntervencionista(state.governmentType) && state.corruptionRisk > 20 && state.cash >= 30000,
     options: [
       {
         text: "Adherir a la moratoria blanqueando tus deudas (-$30.000)",
@@ -582,7 +585,7 @@ export const events = [
     title: "Aranceles Proteccionistas",
     category: "ECONOMÍA & POLÍTICA",
     description: "Bajo presión de las cámaras fabriles, el gobierno intervencionista impone aranceles prohibitivos a los productos importados. La competencia extranjera queda bloqueada.",
-    trigger: (state) => state.governmentType === "Intervencionista" && state.businessType === "industrial",
+    trigger: (state) => isIntervencionista(state.governmentType) && state.businessType === "industrial",
     options: [
       {
         text: "Festejar la medida y aumentar tus precios de lista un 15%",
@@ -609,7 +612,7 @@ export const events = [
     title: "Apertura de Importaciones",
     category: "ECONOMÍA & POLÍTICA",
     description: "El nuevo gobierno liberal abre unilateralmente las aduanas. Productos extranjeros inundan el mercado doméstico a mitad de precio de lo que te cuesta producir a ti.",
-    trigger: (state) => state.governmentType === "Pro-Mercado" && state.turn > 2 && (state.businessType === "industrial" || state.businessType === "comercio"),
+    trigger: (state) => isProMercado(state.governmentType) && state.turn > 2 && (state.businessType === "industrial" || state.businessType === "comercio"),
     options: [
       {
         text: "Reducir la calidad de fabricación o distribución para bajar costos un 30%",
@@ -823,7 +826,7 @@ export const events = [
     title: "La Licitación de la Autopista",
     category: "LICITACIÓN",
     description: "Se anuncia la mayor licitación vial de la década. El pliego exige una solvencia patrimonial enorme, ideal para empresas de construcción o industriales consolidadas.",
-    trigger: (state) => (state.businessType === "construccion" || state.businessType === "industrial") && state.governmentType === "Intervencionista" && state.cash >= 40000,
+    trigger: (state) => (state.businessType === "construccion" || state.businessType === "industrial") && isIntervencionista(state.governmentType) && state.cash >= 40000,
     options: [
       {
         text: "Presentarse asociado a un gigante extranjero honestamente (-$30.000)",
@@ -1225,7 +1228,7 @@ export const events = [
     title: "Precios Cuidados",
     category: "POLÍTICA & ECONOMÍA",
     description: "La Secretaría de Comercio Interior te exige firmar el convenio de 'Precios Cuidados' para tus principales líneas de distribución mayorista bajo amenaza de clausura compulsiva.",
-    trigger: (state) => state.businessType === "comercio" && state.governmentType === "Intervencionista",
+    trigger: (state) => state.businessType === "comercio" && isIntervencionista(state.governmentType),
     options: [
       {
         text: "Firmar el acuerdo de congelamiento de precios a pérdida",
@@ -1530,7 +1533,7 @@ export const events = [
     title: "Aporte Extraordinario de Solidaridad",
     category: "POLÍTICA & FINANZAS",
     description: "Por emergencia nacional ante el déficit fiscal, el gobierno intervencionista crea un impuesto extraordinario único a las empresas con excedente de caja líquida mayor a $300.000.",
-    trigger: (state) => state.cash >= 300000 && state.governmentType === "Intervencionista",
+    trigger: (state) => state.cash >= 300000 && isIntervencionista(state.governmentType),
     options: [
       {
         text: "Pagar el gravamen sin chistar (-$70.000)",
@@ -1611,7 +1614,7 @@ export const events = [
     title: "DNU de Desregulación de Comercio",
     category: "POLÍTICA & ECONOMÍA",
     description: "El poder ejecutivo liberal emite un Mega-Decreto de Necesidad y Urgencia que desregula todos los mercados, liberando precios y eliminando registros de licencias comerciales.",
-    trigger: (state) => state.governmentType === "Pro-Mercado",
+    trigger: (state) => isProMercado(state.governmentType),
     options: [
       {
         text: "Subir tus márgenes de ganancia aprovechando el libre mercado",
@@ -1655,6 +1658,593 @@ export const events = [
         outcomeText: "Mantienes tu liquidez intacta para financiar tus operaciones ordinarias de mes.",
         action: (state) => {
           state.historyLog.unshift(`[Patente] Dejaste pasar la subasta de la licencia de automatización.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 51,
+    title: "Crisis de la Mediana Edad",
+    category: "PERSONAL",
+    description: "Cumplís años y sentís la presión del paso del tiempo. Tus asesores sugieren que te tomes un retiro de meditación o que adquieras un costoso auto deportivo importado para mejorar tu estatus en el club de golf empresarial.",
+    trigger: (state) => state.turn >= 48 && state.cash >= 150000,
+    options: [
+      {
+        text: "Comprar un auto deportivo importado (-$80.000)",
+        outcomeText: "Te mudas a un estatus superior. Consigues llamar la atención en el club de golf y sumas contactos.",
+        action: (state) => {
+          state.cash -= 80000;
+          state.contacts = Math.min(100, state.contacts + 15);
+          state.reputation = Math.min(100, state.reputation + 10);
+          state.historyLog.unshift(`[Personal] Compraste un deportivo importado. +15 Contactos, +10 Reputación.`);
+        }
+      },
+      {
+        text: "Tomarse un mes de retiro espiritual en la Patagonia (-$15.000)",
+        outcomeText: "Vuelves con la mente clara. Tu eficiencia empresarial sube y logras regularizar tu nivel de estrés.",
+        action: (state) => {
+          state.cash -= 15000;
+          state.efficiency = Math.min(100, state.efficiency + 15);
+          state.corruptionRisk = Math.max(0, state.corruptionRisk - 10);
+          state.historyLog.unshift(`[Personal] Retiro espiritual completado. +15% Eficiencia, -10 Riesgo Judicial.`);
+        }
+      },
+      {
+        text: "Ignorar la crisis y seguir trabajando",
+        outcomeText: "Ahorras tu dinero, pero sientes el agotamiento del día a día.",
+        action: (state) => {
+          state.historyLog.unshift(`[Personal] Decidiste ignorar tu crisis de mediana edad.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 52,
+    title: "La Sucesión Familiar",
+    category: "PERSONAL",
+    description: "Tu hijo mayor finaliza sus estudios en una prestigiosa escuela de negocios. Debes decidir si colocarlo directamente en un puesto de dirección, obligarlo a empezar de abajo en la fábrica, o contratar a un CEO profesional externo.",
+    trigger: (state) => (state.stage === "Empresa Consolidada" || state.stage === "Corporación Nacional") && state.employees >= 5,
+    options: [
+      {
+        text: "Nombrarlo Director Ejecutivo (Gratis)",
+        outcomeText: "Aumenta la lealtad familiar y tu control de la empresa, pero el personal se resiente por el acomodo y cae la eficiencia.",
+        action: (state) => {
+          state.independence = Math.min(100, state.independence + 15);
+          state.efficiency = Math.max(10, state.efficiency - 15);
+          state.historyLog.unshift(`[Personal] Nombraste a tu hijo Director Ejecutivo. -15% Eficiencia.`);
+        }
+      },
+      {
+        text: "Obligarlo a empezar en la fábrica desde abajo (-$5.000)",
+        outcomeText: "Tus empleados respetan el gesto y ven equidad. Tu reputación corporativa mejora sensiblemente.",
+        action: (state) => {
+          state.cash -= 5000;
+          state.reputation = Math.min(100, state.reputation + 20);
+          state.historyLog.unshift(`[Personal] Tu hijo empieza de abajo en planta. +20 Reputación.`);
+        }
+      },
+      {
+        text: "Contratar un CEO externo profesional (-$30.000)",
+        outcomeText: "Traes a un ejecutivo con experiencia multinacional. La eficiencia y la innovación dan un salto inmediato.",
+        action: (state) => {
+          state.cash -= 30000;
+          state.efficiency = Math.min(100, state.efficiency + 25);
+          state.innovation = Math.min(100, state.innovation + 15);
+          state.historyLog.unshift(`[Personal] Contrataste un CEO corporativo profesional. +25% Eficiencia.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 53,
+    title: "El Heredero Caprichoso",
+    category: "PERSONAL",
+    description: "Tu hijo menor choca el auto corporativo de la empresa contra el portal de una residencia privada. Los vecinos amenazan con llamar a los medios si no pagás los daños de inmediato.",
+    trigger: (state) => state.employees >= 3 && state.cash >= 50000,
+    options: [
+      {
+        text: "Pagar el arreglo y silenciar el asunto (-$20.000)",
+        outcomeText: "Evitas que la noticia trascienda. Mantienes tu reputación intacta a costa de caja.",
+        action: (state) => {
+          state.cash -= 20000;
+          state.reputation = Math.min(100, state.reputation + 5);
+          state.historyLog.unshift(`[Personal] Pagaste los daños del choque familiar. Evitaste escándalo.`);
+        }
+      },
+      {
+        text: "Dejar que intervenga la justicia y deslindar responsabilidad",
+        outcomeText: "Te ahorras el dinero, pero el escándalo mediático y el juicio afectan la reputación de tu empresa.",
+        action: (state) => {
+          state.reputation = Math.max(0, state.reputation - 20);
+          state.independence = Math.min(100, state.independence + 10);
+          state.historyLog.unshift(`[Personal] Dejaste el choque en manos de la justicia. Escándalo en prensa.`);
+        }
+      },
+      {
+        text: "Usar contactos políticos para archivar la causa judicial",
+        condition: (state) => state.contacts >= 25,
+        conditionText: "Requiere 25% de Contactos",
+        outcomeText: "Llamas al comisario de la zona. Se archiva la causa, pero aumentas tu nivel de exposición y riesgo de AFIP.",
+        action: (state) => {
+          state.contacts = Math.max(0, state.contacts - 5);
+          state.corruptionRisk = Math.min(100, state.corruptionRisk + 15);
+          state.historyLog.unshift(`[Personal] Archivaste el choque usando influencia policial.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 54,
+    title: "Compra de Mansión en San Isidro",
+    category: "PERSONAL",
+    description: "Tu estatus social ha crecido. Se libera una propiedad histórica en las barrancas de San Isidro. Adquirirla consolidará tu prestigio frente al 'Círculo Rojo' empresarial argentino.",
+    trigger: (state) => (state.stage === "Corporación Nacional" || state.stage === "Pulpo Económico / Magnate") && state.cash >= 600000,
+    options: [
+      {
+        text: "Comprar la mansión al contado (-$400.000)",
+        outcomeText: "Te mudas a la zona más exclusiva. Tus contactos sociales y reputación crecen enormemente.",
+        action: (state) => {
+          state.cash -= 400000;
+          state.contacts = Math.min(100, state.contacts + 30);
+          state.reputation = Math.min(100, state.reputation + 20);
+          state.historyLog.unshift(`[Personal] Compraste mansión en San Isidro. +30 Contactos.`);
+        }
+      },
+      {
+        text: "Rechazar la propiedad y seguir viviendo de forma austera",
+        outcomeText: "Demuestras austeridad. Tu independencia y foco corporativo mejoran, ganando respeto interno.",
+        action: (state) => {
+          state.independence = Math.min(100, state.independence + 15);
+          state.efficiency = Math.min(100, state.efficiency + 10);
+          state.historyLog.unshift(`[Personal] Declinaste comprar la mansión. Foco en la austeridad.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 55,
+    title: "Filantropía en el Museo Nacional",
+    category: "PERSONAL",
+    description: "El Museo Nacional de Bellas Artes te invita a ser su mecenas principal financiando la restauración de un ala histórica, posicionándote como un referente cultural del país.",
+    trigger: (state) => state.cash >= 200000 && state.reputation >= 40,
+    options: [
+      {
+        text: "Donar fondos para la restauración del museo (-$60.000)",
+        outcomeText: "La opinión pública celebra tu compromiso. Tu reputación sube al máximo y obtienes una desgravación fiscal.",
+        action: (state) => {
+          state.cash -= 60000;
+          state.reputation = Math.min(100, state.reputation + 30);
+          state.contacts = Math.min(100, state.contacts + 10);
+          state.historyLog.unshift(`[Personal] Donaste $60.000 al Museo Nacional. Reputación al máximo.`);
+        }
+      },
+      {
+        text: "Adquirir una colección de arte privada como resguardo (-$80.000)",
+        outcomeText: "Inviertes en activos tangibles que retienen valor. La alta sociedad alaba tu buen gusto.",
+        action: (state) => {
+          state.cash -= 80000;
+          state.reputation = Math.min(100, state.reputation + 15);
+          state.historyLog.unshift(`[Personal] Adquiriste colección de arte privada como inversión.`);
+        }
+      },
+      {
+        text: "Declinar la propuesta amablemente",
+        outcomeText: "Conservas la liquidez, pero los círculos culturales te tildan de insensible.",
+        action: (state) => {
+          state.reputation = Math.max(0, state.reputation - 5);
+          state.historyLog.unshift(`[Personal] Declinaste el mecenazgo del Museo Nacional.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 56,
+    title: "Boda de Elite",
+    category: "PERSONAL",
+    description: "Se celebra tu boda (o la de tu hijo) con la hija de un influyente camarista federal. El evento es el acontecimiento social del año.",
+    trigger: (state) => state.turn >= 36 && state.contacts >= 25 && state.cash >= 100000,
+    options: [
+      {
+        text: "Organizar una gala masiva en el Alvear Palace Hotel (-$50.000)",
+        outcomeText: "Asisten ministros, empresarios y jueces. Tus contactos políticos y sociales explotan.",
+        action: (state) => {
+          state.cash -= 50000;
+          state.contacts = Math.min(100, state.contacts + 35);
+          state.reputation = Math.min(100, state.reputation + 15);
+          state.historyLog.unshift(`[Personal] Mega boda en el Alvear. +35% Contactos.`);
+        }
+      },
+      {
+        text: "Hacer una celebración íntima en tu estancia (-$15.000)",
+        outcomeText: "Mantienes un perfil bajo y resguardas tu independencia empresarial.",
+        action: (state) => {
+          state.cash -= 15000;
+          state.independence = Math.min(100, state.independence + 20);
+          state.historyLog.unshift(`[Personal] Celebración de boda privada. +20 Independencia.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 57,
+    title: "Doctorado Honoris Causa",
+    category: "PERSONAL",
+    description: "Una prestigiosa universidad nacional te confiere el Doctorado Honoris Causa por tu trayectoria y aporte al desarrollo tecnológico y empresarial.",
+    trigger: (state) => state.innovation >= 55 && state.reputation >= 55,
+    options: [
+      {
+        text: "Aceptar la distinción y dar el discurso de graduación (-$5.000)",
+        outcomeText: "Tu imagen pública es impecable. Los medios te retratan como un líder ético y visionario.",
+        action: (state) => {
+          state.cash -= 5000;
+          state.reputation = Math.min(100, state.reputation + 25);
+          state.innovation = Math.min(100, state.innovation + 10);
+          state.historyLog.unshift(`[Personal] Recibiste Doctorado Honoris Causa. +25 Reputación.`);
+        }
+      },
+      {
+        text: "Rechazar por motivos de agenda corporativa",
+        outcomeText: "Evitas el foco de atención, ganando tiempo para concentrarte en tus operaciones.",
+        action: (state) => {
+          state.efficiency = Math.min(100, state.efficiency + 5);
+          state.historyLog.unshift(`[Personal] Rechazaste el Doctorado Honoris Causa.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 58,
+    title: "Alianza Estratégica Internacional",
+    category: "CRECIMIENTO",
+    description: "Una multinacional extranjera líder en tu rubro te propone firmar un joint-venture de distribución cruzada para expandir tus operaciones a nivel latinoamericano.",
+    trigger: (state) => (state.stage === "Corporación Nacional" || state.stage === "Pulpo Económico / Magnate") && state.cash >= 150000,
+    options: [
+      {
+        text: "Firmar la alianza e integrar operaciones (-$100.000)",
+        outcomeText: "Tus clientes se multiplican de inmediato y accedes a transferencia tecnológica que dispara tu innovación.",
+        action: (state) => {
+          state.cash -= 100000;
+          state.clients = Math.min(1000, state.clients + 150);
+          state.innovation = Math.min(100, state.innovation + 20);
+          state.efficiency = Math.min(100, state.efficiency + 15);
+          state.historyLog.unshift(`[Alianza] Firmaste Joint-Venture internacional. +150 Clientes, +20% Innovación.`);
+        }
+      },
+      {
+        text: "Rechazar la propuesta para mantener control total",
+        outcomeText: "Preservas tu total independencia societaria sin diluciones ni influencia extranjera.",
+        action: (state) => {
+          state.independence = Math.min(100, state.independence + 20);
+          state.historyLog.unshift(`[Alianza] Declinaste joint-venture. Mantienes independencia del 100%.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 59,
+    title: "Subsidio de Fomento del BID",
+    category: "FINANZAS & TECNOLOGÍA",
+    description: "El Banco Interamericano de Desarrollo (BID) abre un cupo de fomento tecnológico para empresas que inviertan en procesos y eficiencia digital sustentable.",
+    trigger: (state) => state.innovation >= 30 && state.cash >= 20000,
+    options: [
+      {
+        text: "Contratar consultora para preparar pliego del BID (-$10.000)",
+        outcomeText: "Tu propuesta es aprobada. Recibes un subsidio internacional no reembolsable libre de impuestos e independiente del Estado.",
+        action: (state) => {
+          state.cash += 110000; // $120k grant minus $10k cost
+          state.efficiency = Math.min(100, state.efficiency + 15);
+          state.historyLog.unshift(`[BID] Obtuviste subsidio no reembolsable del BID. +$120.000, +15% Eficiencia.`);
+        }
+      },
+      {
+        text: "No aplicar y ahorrar capital operativo",
+        outcomeText: "Mantienes tu liquidez ordinaria sin desviar recursos de ingeniería a pliegos.",
+        action: (state) => {
+          state.historyLog.unshift(`[BID] Declinaste aplicar al subsidio del BID.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 60,
+    title: "Boom de Demanda por Eco-Trend",
+    category: "MERCADO",
+    description: "Se instala una fuerte tendencia de consumo verde y sustentable en tu mercado principal. Los clientes buscan activamente marcas con responsabilidad ecológica.",
+    trigger: (state) => state.reputation >= 45 && ["industrial", "comercio", "agropecuario"].includes(state.businessType) && state.cash >= 30000,
+    options: [
+      {
+        text: "Lanzar línea sustentable con certificación ecológica (-$20.000)",
+        outcomeText: "El mercado responde con entusiasmo. Atraes un aluvión de clientes y consolidas tu reputación.",
+        action: (state) => {
+          state.cash -= 20000;
+          state.clients = Math.min(1000, state.clients + 80);
+          state.reputation = Math.min(100, state.reputation + 20);
+          state.historyLog.unshift(`[Mercado] Lanzaste línea Eco-Friendly. +80 Clientes, +20 Reputación.`);
+        }
+      },
+      {
+        text: "Ignorar la tendencia verde y ahorrar caja",
+        outcomeText: "Mantienes tus procesos productivos estándar y evitas costos de reestructuración.",
+        action: (state) => {
+          state.historyLog.unshift(`[Mercado] Declinaste cambiar a empaques verdes.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 61,
+    title: "Exención Impositiva Provincial",
+    category: "POLÍTICA & FINANZAS",
+    description: "Una provincia vecina busca atraer inversiones y te ofrece una exención de ingresos brutos y tasas municipales si trasladas una sucursal o planta operativa allí.",
+    trigger: (state) => state.stage === "Empresa Consolidada" && state.cash >= 100000,
+    options: [
+      {
+        text: "Establecer sede provincial secundaria (-$80.000)",
+        outcomeText: "La inversión inicial es costosa, pero reduce tu alícuota fiscal neta de forma permanente y atraes clientes de la nueva región.",
+        action: (state) => {
+          state.cash -= 80000;
+          state.clients = Math.min(1000, state.clients + 60);
+          state.panamaTaxShield = true; // Simulates tax break by sharing offshore shield code path or lowering rate
+          state.historyLog.unshift(`[Expansión] Nueva planta provincial inaugurada. +60 Clientes, rebaja fiscal del 50%.`);
+        }
+      },
+      {
+        text: "Permanecer centralizado en tu sede actual",
+        outcomeText: "Evitas los costos de mudanza y mantienes la supervisión centralizada de tu negocio.",
+        action: (state) => {
+          state.historyLog.unshift(`[Expansión] Declinaste la exención impositiva de la provincia vecina.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 62,
+    title: "Nominación a Empresario del Año",
+    category: "PRESTIGIO",
+    description: "La cámara empresarial del Círculo Rojo te nomina al prestigioso premio 'Empresario del Año' debido a tu trayectoria y crecimiento sustentable.",
+    trigger: (state) => state.reputation >= 60 && state.cash >= 150000,
+    options: [
+      {
+        text: "Patrocinar la gala anual de premiación (-$15.000)",
+        outcomeText: "Te consagras ganador indiscutido. Las portadas de prensa te aclaman y tu red de contactos corporativos se amplía.",
+        action: (state) => {
+          state.cash -= 15000;
+          state.reputation = Math.min(100, state.reputation + 25);
+          state.contacts = Math.min(100, state.contacts + 20);
+          state.historyLog.unshift(`[Prestigio] Ganador 'Empresario del Año'. +25 Reputación, +20 Contactos.`);
+        }
+      },
+      {
+        text: "Asistir a la premiación como invitado de perfil bajo",
+        outcomeText: "Ganas reconocimiento corporativo entre tus pares sin necesidad de desembolsar capital de auspicio.",
+        action: (state) => {
+          state.reputation = Math.min(100, state.reputation + 10);
+          state.historyLog.unshift(`[Prestigio] Asististe a los premios Empresario del Año. +10 Reputación.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 63,
+    title: "Patente Registrada con Éxito",
+    category: "TECNOLOGÍA & INNOVACIÓN",
+    description: "Tu equipo de ingeniería o desarrollo registra con éxito una nueva patente ante el Instituto Nacional de la Propiedad Industrial (INPI) optimizando procesos críticos.",
+    trigger: (state) => state.innovation >= 50 && state.cash >= 10000,
+    options: [
+      {
+        text: "Aplicar la patente a tu propia línea productiva (-$10.000)",
+        outcomeText: "Obtienes un incremento drástico y permanente en la eficiencia y la innovación de tus servicios o productos.",
+        action: (state) => {
+          state.cash -= 10000;
+          state.efficiency = Math.min(200, state.efficiency + 30);
+          state.innovation = Math.min(100, state.innovation + 10);
+          state.historyLog.unshift(`[INPI] Implementaste patente INPI en operaciones. +30% Eficiencia.`);
+        }
+      },
+      {
+        text: "Vender la patente a una corporación rival",
+        outcomeText: "Recibes una inyección inmediata de capital en efectivo, renunciando a las ventajas operativas futuras.",
+        action: (state) => {
+          state.cash += 50000;
+          state.historyLog.unshift(`[INPI] Vendiste patente a un competidor por +$50.000 cash.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 64,
+    title: "Contrato de Exportación Industrial",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "Un gran distribuidor en Brasil se interesa en importar tu línea de manufacturas, requiriendo readecuar el embalaje y pagar tasas de aduana iniciales por -$15.000.",
+    trigger: (state) => state.businessType === "industrial" && state.efficiency >= 40 && state.cash >= 20000,
+    options: [
+      {
+        text: "Firmar acuerdo de exportación y costear aduana (-$15.000)",
+        outcomeText: "Cierras el contrato comercial. Otorgará un flujo de ingresos mensuales lícitos por 12 meses.",
+        action: (state) => {
+          state.cash -= 15000;
+          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+          const scale = Math.max(1, Math.floor(netAssets / 120000));
+          const monthlyRevenue = 20000 * scale;
+          state.activeTenders.push({
+            id: Math.floor(Math.random() * 100000) + 10000,
+            title: "Exportación a Brasil",
+            monthlyRevenue,
+            turnsLeft: 12
+          });
+          state.historyLog.unshift(`[Comercial] Firmaste exportación a Brasil (+$${monthlyRevenue.toLocaleString()}/mes) por 12 meses.`);
+        }
+      },
+      {
+        text: "Dejar pasar la oportunidad para ahorrar caja",
+        outcomeText: "Decides enfocarte en el mercado interno y evitas los gastos logísticos iniciales.",
+        action: (state) => {
+          state.historyLog.unshift(`[Comercial] Dejaste pasar el contrato de exportación industrial.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 65,
+    title: "Exportación de Granos a Europa",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "Un bróker de granos en Róterdam te propone un contrato a término de 12 meses para exportar tu cosecha, requiriendo adaptar controles fitosanitarios por -$15.000.",
+    trigger: (state) => state.businessType === "agropecuario" && state.efficiency >= 40 && state.cash >= 20000,
+    options: [
+      {
+        text: "Financiar controles fitosanitarios y firmar (-$15.000)",
+        outcomeText: "Firmas el contrato de exportación. Recibirás pagos mensuales lícitos garantizados por 12 meses.",
+        action: (state) => {
+          state.cash -= 15000;
+          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+          const scale = Math.max(1, Math.floor(netAssets / 120000));
+          const monthlyRevenue = 20000 * scale;
+          state.activeTenders.push({
+            id: Math.floor(Math.random() * 100000) + 10000,
+            title: "Exportación a Róterdam",
+            monthlyRevenue,
+            turnsLeft: 12
+          });
+          state.historyLog.unshift(`[Comercial] Firmaste exportación a Europa (+$${monthlyRevenue.toLocaleString()}/mes) por 12 meses.`);
+        }
+      },
+      {
+        text: "Declinar la oferta internacional",
+        outcomeText: "Vendes la cosecha en acopios locales sin incurrir en costos de certificación internacional.",
+        action: (state) => {
+          state.historyLog.unshift(`[Comercial] Declinaste exportar granos a Róterdam.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 66,
+    title: "Contrato de Desarrollo Cloud Enterprise",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "Una multinacional de servicios financieros te invita a firmar el desarrollo de su infraestructura de datos en la nube por 12 meses, requiriendo auditorías de seguridad por -$10.000.",
+    trigger: (state) => state.businessType === "software" && state.innovation >= 45 && state.cash >= 15000,
+    options: [
+      {
+        text: "Pagar auditoría y firmar contrato cloud (-$10.000)",
+        outcomeText: "Consigues el contrato corporativo privado de desarrollo, sumando facturación lícita mensual por 12 meses.",
+        action: (state) => {
+          state.cash -= 10000;
+          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+          const scale = Math.max(1, Math.floor(netAssets / 120000));
+          const monthlyRevenue = 15000 * scale;
+          state.activeTenders.push({
+            id: Math.floor(Math.random() * 100000) + 10000,
+            title: "Desarrollo Cloud Enterprise",
+            monthlyRevenue,
+            turnsLeft: 12
+          });
+          state.historyLog.unshift(`[Comercial] Firmaste contrato de desarrollo cloud (+$${monthlyRevenue.toLocaleString()}/mes) por 12 meses.`);
+        }
+      },
+      {
+        text: "Dejar pasar y enfocar desarrolladores en SaaS propio",
+        outcomeText: "Evitas el gasto y continúas mejorando tus productos internos.",
+        action: (state) => {
+          state.historyLog.unshift(`[Comercial] Declinaste el contrato de desarrollo cloud corporativo.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 67,
+    title: "Gran Canal de Distribución Mayorista",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "La mayor cadena de supermercados del país te ofrece ingresar tus productos en sus góndolas nacionales, requiriendo un aporte logístico inicial de -$20.000.",
+    trigger: (state) => state.businessType === "comercio" && state.reputation >= 40 && state.cash >= 25000,
+    options: [
+      {
+        text: "Financiar integración logística y firmar (-$20.000)",
+        outcomeText: "El contrato se sella. Garantizas ventas masivas a precio mayorista fijo por 12 meses.",
+        action: (state) => {
+          state.cash -= 20000;
+          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+          const scale = Math.max(1, Math.floor(netAssets / 120000));
+          const monthlyRevenue = 22000 * scale;
+          state.activeTenders.push({
+            id: Math.floor(Math.random() * 100000) + 10000,
+            title: "Acuerdo Supermercado Nacional",
+            monthlyRevenue,
+            turnsLeft: 12
+          });
+          state.historyLog.unshift(`[Comercial] Firmaste acuerdo mayorista con supermercados (+$${monthlyRevenue.toLocaleString()}/mes) por 12 meses.`);
+        }
+      },
+      {
+        text: "Permanecer vendiendo en locales propios",
+        outcomeText: "Mantienes márgenes minoristas más altos pero menor escala de volumen.",
+        action: (state) => {
+          state.historyLog.unshift(`[Comercial] Declinaste ingresar a la cadena nacional de supermercados.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 68,
+    title: "Adjudicación de Obra Civil Privada",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "Un importante consorcio de desarrolladores privados te propone adjudicarte la cimentación de un complejo de torres en Belgrano, exigiendo seguros de caución por -$25.000.",
+    trigger: (state) => state.businessType === "construccion" && state.machineryCount >= 2 && state.cash >= 30000,
+    options: [
+      {
+        text: "Adquirir seguros de caución y firmar (-$25.000)",
+        outcomeText: "Sellas el acuerdo privado. Obtienes ingresos mensuales certificados por 12 meses.",
+        action: (state) => {
+          state.cash -= 25000;
+          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+          const scale = Math.max(1, Math.floor(netAssets / 120000));
+          const monthlyRevenue = 30000 * scale;
+          state.activeTenders.push({
+            id: Math.floor(Math.random() * 100000) + 10000,
+            title: "Obra Torres de Belgrano",
+            monthlyRevenue,
+            turnsLeft: 12
+          });
+          state.historyLog.unshift(`[Comercial] Firmaste obra civil privada de torres (+$${monthlyRevenue.toLocaleString()}/mes) por 12 meses.`);
+        }
+      },
+      {
+        text: "Rechazar y licitar obras de menor escala",
+        outcomeText: "Evitas el desembolso inicial de seguros corporativos.",
+        action: (state) => {
+          state.historyLog.unshift(`[Comercial] Declinaste obra civil privada de gran envergadura.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 69,
+    title: "Estructuración de Fideicomiso Privado",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "Una red de oficinas de banca privada te ofrece estructurar en conjunto un fideicomiso de inversión, demandando gastos legales y regulatorios por -$30.000.",
+    trigger: (state) => state.businessType === "finanzas" && state.contacts >= 20 && state.cash >= 35000,
+    options: [
+      {
+        text: "Costear gastos de estructuración y firmar (-$30.000)",
+        outcomeText: "Lanzas el fideicomiso. Ganas comisiones fijas mensuales por administración durante 12 meses.",
+        action: (state) => {
+          state.cash -= 30000;
+          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+          const scale = Math.max(1, Math.floor(netAssets / 120000));
+          const monthlyRevenue = 35000 * scale;
+          state.activeTenders.push({
+            id: Math.floor(Math.random() * 100000) + 10000,
+            title: "Fideicomiso Privado",
+            monthlyRevenue,
+            turnsLeft: 12
+          });
+          state.historyLog.unshift(`[Comercial] Firmaste estructuración de fideicomiso privado (+$${monthlyRevenue.toLocaleString()}/mes) por 12 meses.`);
+        }
+      },
+      {
+        text: "No participar de la estructuración",
+        outcomeText: "Mantienes tu liquidez libre de costos legales extraordinarios.",
+        action: (state) => {
+          state.historyLog.unshift(`[Comercial] Declinaste estructurar fideicomiso privado.`);
         }
       }
     ]
