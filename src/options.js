@@ -90,6 +90,36 @@ export const INDUSTRIES = {
     fixedOpCost: 14000,
     capacityPerEmployee: 5,
     description: "Cultivo de granos y ganadería. Muy sensible a las retenciones, sequías y precios internacionales."
+  },
+  petrolera: {
+    name: "Empresa Petrolera",
+    cash: 120000,
+    employees: 4,
+    clients: 12,
+    efficiency: 30,
+    innovation: 20,
+    reputation: 40,
+    contacts: 15,
+    baseMargin: 4500,
+    baseOpCost: 3200,
+    fixedOpCost: 25000,
+    capacityPerEmployee: 6,
+    description: "Extracción y refinamiento de hidrocarburos. Altísimo margen de ganancias pero expuesta a derrames ecológicos, regulaciones ambientales estrictas y fluctuación de commodities."
+  },
+  minera: {
+    name: "Compañía Minera",
+    cash: 110000,
+    employees: 5,
+    clients: 10,
+    efficiency: 35,
+    innovation: 15,
+    reputation: 35,
+    contacts: 18,
+    baseMargin: 3800,
+    baseOpCost: 2600,
+    fixedOpCost: 22000,
+    capacityPerEmployee: 4,
+    description: "Extracción metalífera y litio. Gran potencial exportador, pero enfrenta conflictos sociales comunitarios, paros gremiales masivos y fuertes costos de remediación ambiental."
   }
 };
 
@@ -156,6 +186,24 @@ export const ASSETS_BY_INDUSTRY = {
     confirmText: (cost, gain) => `¿Deseas adquirir una cosechadora avanzada por $${cost.toLocaleString()}? Aumentará tu eficiencia de siembra en +${gain}%.`,
     successMsg: "¡Cosechadora agrícola adquirida y lista para la siembra!",
     historyMsg: (cost, gain) => `Compraste cosechadora agrícola ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
+  },
+  petrolera: {
+    singular: "Torre de Perforación",
+    plural: "Torres de Perforación",
+    emoji: "🛢️",
+    baseBtnLabel: "🛢️ Comprar Torre",
+    confirmText: (cost, gain) => `¿Deseas instalar una torre de perforación avanzada por $${cost.toLocaleString()}? Aumentará tu eficiencia de extracción en +${gain}%.`,
+    successMsg: "¡Torre de perforación instalada y bombeando!",
+    historyMsg: (cost, gain) => `Instalaste torre de perforación ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
+  },
+  minera: {
+    singular: "Excavadora Pesada",
+    plural: "Excavadoras Pesadas",
+    emoji: "⛏️",
+    baseBtnLabel: "⛏️ Comprar Excavadora",
+    confirmText: (cost, gain) => `¿Deseas adquirir una excavadora pesada para minería a cielo abierto por $${cost.toLocaleString()}? Aumentará tu eficiencia de extracción en +${gain}%.`,
+    successMsg: "¡Excavadora pesada integrada a la faena minera!",
+    historyMsg: (cost, gain) => `Compraste excavadora pesada ($${cost.toLocaleString()}). +${gain}% Eficiencia.`
   }
 };
 

@@ -200,14 +200,15 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setState(parsed);
+        const merged = { ...DEFAULT_STATE, ...parsed };
+        setState(merged);
         setIsPlaying(true);
-        setLastMonthOutcome(parsed.lastMonthOutcome || "");
-        if (parsed.currentEventId) {
-          const ev = events.find(e => e.id === parsed.currentEventId);
+        setLastMonthOutcome(merged.lastMonthOutcome || "");
+        if (merged.currentEventId !== undefined && merged.currentEventId !== null) {
+          const ev = events.find(e => e.id === merged.currentEventId);
           setCurrentEvent(ev || null);
         } else {
-          triggerRandomEvent(parsed);
+          triggerRandomEvent(merged);
         }
       } catch (e) {
         console.error("Error loading saved game:", e);
@@ -1242,6 +1243,9 @@ export default function App() {
     // Save final turn state
     setState(nextState);
     saveState(nextState, outcomeSummary, nextEvent ? nextEvent.id : null);
+    
+    // Toast notification to reassure player that turn has successfully advanced
+    upop.toast.info(`Mes ${nextState.turn} iniciado.`);
 
     if (triggerAnnualReport) {
       setShowAnnualModal(true);
@@ -1485,7 +1489,15 @@ export default function App() {
                       className={`business-option glass ${setupType === key ? 'selected' : ''}`}
                       onClick={() => setSetupType(key)}
                     >
-                      <h3>{key === 'industrial' ? '🏭' : key === 'software' ? '💻' : key === 'comercio' ? '🚢' : key === 'finanzas' ? '💵' : key === 'construccion' ? '🏗️' : '🌾'} {data.name}</h3>
+                      <h3>
+                        {key === 'industrial' ? '🏭' : 
+                         key === 'software' ? '💻' : 
+                         key === 'comercio' ? '🚢' : 
+                         key === 'finanzas' ? '💵' : 
+                         key === 'construccion' ? '🏗️' : 
+                         key === 'agropecuario' ? '🌾' :
+                         key === 'petrolera' ? '🛢️' : '⛏️'} {data.name}
+                      </h3>
                       <p className="desc">{data.description}</p>
                       <div className="option-stats">
                         <span>💰 ${data.cash.toLocaleString()}</span>

@@ -2248,5 +2248,182 @@ export const events = [
         }
       }
     ]
+  },
+  {
+    id: 70,
+    title: "Derrame de Crudo en Plataforma",
+    category: "RIESGO AMBIENTAL",
+    description: "Una fisura en una junta de presión de tu pozo petrolero libera crudo al mar. Las organizaciones ambientalistas y el Estado te exigen multas y remediación.",
+    trigger: (state) => state.businessType === "petrolera" && state.machineryCount >= 1,
+    options: [
+      {
+        text: "Pagar la remediación ecológica inmediata (-$100.000)",
+        outcomeText: "Evitas un juicio multimillonario y mejoras tu reputación pública, pero drena tu liquidez.",
+        action: (state) => {
+          state.cash -= 100000;
+          state.reputation = Math.min(100, state.reputation + 15);
+          state.historyLog.unshift(`[Petróleo] Pagaste remediación por derrame de crudo. -$100.000.`);
+        }
+      },
+      {
+        text: "Apelar la multa ante la justicia y retrasar obras",
+        outcomeText: "Evitas el pago inmediato, pero la prensa y activistas destruyen tu reputación corporativa.",
+        action: (state) => {
+          state.reputation = Math.max(0, state.reputation - 30);
+          state.corruptionRisk = Math.min(100, state.corruptionRisk + 10);
+          state.historyLog.unshift(`[Petróleo] Apelaste judicialmente la sanción por derrame. Daño reputacional.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 71,
+    title: "Concesión de Shale Gas en Vaca Muerta",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "Geólogos confirman reservas de gas no convencional masivas en tus lotes de Vaca Muerta. Requiere costear fractura hidráulica para explotarlo.",
+    trigger: (state) => state.businessType === "petrolera" && state.cash >= 80000,
+    options: [
+      {
+        text: "Financiar explotación hidráulica de Shale (-$80.000)",
+        outcomeText: "La producción se dispara, atrayendo nuevos clientes de exportación industrial.",
+        action: (state) => {
+          state.cash -= 80000;
+          state.efficiency = Math.min(200, state.efficiency + 30);
+          state.clients = Math.min(1000, state.clients + 90);
+          state.historyLog.unshift(`[Petróleo] Financiaste Shale Gas en Vaca Muerta. +30% Eficiencia.`);
+        }
+      },
+      {
+        text: "Vender la concesión a una corporación extranjera",
+        outcomeText: "Cedes los derechos futuros a cambio de una inyección de caja masiva inmediata.",
+        action: (state) => {
+          state.cash += 150000;
+          state.historyLog.unshift(`[Petróleo] Vendiste concesión de yacimiento. +$150.000.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 72,
+    title: "Derrumbe de Galería Minera",
+    category: "RIESGO OPERATIVO",
+    description: "Un sismo provoca el derrumbe de una galería subterránea de extracción de litio, paralizando temporalmente las faenas mineras.",
+    trigger: (state) => state.businessType === "minera" && state.machineryCount >= 1,
+    options: [
+      {
+        text: "Indemnizar personal y reconstruir con seguridad máxima (-$80.000)",
+        outcomeText: "Ganas el apoyo absoluto del gremio y recuperas eficiencia operativa.",
+        action: (state) => {
+          state.cash -= 80000;
+          state.reputation = Math.min(100, state.reputation + 20);
+          state.efficiency = Math.min(200, state.efficiency + 15);
+          state.historyLog.unshift(`[Minería] Reconstruiste galería colapsada. Gremio conforme.`);
+        }
+      },
+      {
+        text: "Forzar el reinicio de tareas sin obras de contención",
+        outcomeText: "Te ahorras el dinero, pero desatas una huelga sindical masiva que desploma la productividad.",
+        action: (state) => {
+          state.efficiency = Math.max(10, state.efficiency - 25);
+          state.reputation = Math.max(0, state.reputation - 20);
+          state.historyLog.unshift(`[Minería] Forzaste tareas en zona insegura. Huelga y caída de eficiencia.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 73,
+    title: "Bloqueo Indígena en el Yacimiento",
+    category: "CONFLICTO SOCIAL",
+    description: "Comunidades originarias locales cortan las rutas de acceso a tu mina de cobre por la preocupación del impacto del proyecto sobre las napas acuíferas.",
+    trigger: (state) => state.businessType === "minera",
+    options: [
+      {
+        text: "Financiar acueducto público comunitario (-$50.000)",
+        outcomeText: "Desactivas el corte de forma pacífica sumando reputación y contactos regionales.",
+        action: (state) => {
+          state.cash -= 50000;
+          state.reputation = Math.min(100, state.reputation + 20);
+          state.contacts = Math.min(100, state.contacts + 10);
+          state.historyLog.unshift(`[Minería] Donaste acueducto comunitario. Conflicto social resuelto.`);
+        }
+      },
+      {
+        text: "Solicitar desalojo policial de la ruta",
+        condition: (state) => ["Liberalismo", "Radicalismo"].includes(state.governmentType) || state.contacts >= 30,
+        conditionText: "Requiere Gobierno Afín o 30% de Contactos",
+        outcomeText: "La policía desaloja la ruta liberando el yacimiento, pero la opinión pública condena la represión.",
+        action: (state) => {
+          state.reputation = Math.max(0, state.reputation - 30);
+          state.historyLog.unshift(`[Minería] Desalojo policial del yacimiento. Caída severa de reputación.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 74,
+    title: "Provisión de Crudo a Refinería",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "La refinería petrolera nacional YPF te ofrece un contrato de provisión preferencial de crudo por 12 meses si pagas la tasa de ducto por -$30.000.",
+    trigger: (state) => state.businessType === "petrolera" && state.efficiency >= 35 && state.cash >= 35000,
+    options: [
+      {
+        text: "Pagar tasa de ducto y firmar contrato (-$30.000)",
+        outcomeText: "Firmas el contrato. Otorga un flujo mensual de facturación lícita garantizado por 12 meses.",
+        action: (state) => {
+          state.cash -= 30000;
+          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+          const scale = Math.max(1, Math.floor(netAssets / 120000));
+          const monthlyRevenue = 40000 * scale;
+          state.activeTenders.push({
+            id: Math.floor(Math.random() * 100000) + 10000,
+            title: "Venta Crudo Refinería",
+            monthlyRevenue,
+            turnsLeft: 12
+          });
+          state.historyLog.unshift(`[Petróleo] Sellaste provisión de crudo (+$${monthlyRevenue.toLocaleString()}/mes) por 12 meses.`);
+        }
+      },
+      {
+        text: "Dejar pasar la oportunidad comercial",
+        outcomeText: "Conservas la liquidez inmediata para especulaciones financieras de mes.",
+        action: (state) => {
+          state.historyLog.unshift(`[Petróleo] Rechazaste contrato de provisión de crudo.`);
+        }
+      }
+    ]
+  },
+  {
+    id: 75,
+    title: "Exportación de Litio a Asia",
+    category: "CRECIMIENTO COMERCIAL",
+    description: "Un gigante tecnológico de Corea del Sur te ofrece comprar tu producción de litio por 12 meses, requiriendo un canon portuario inicial por -$25.000.",
+    trigger: (state) => state.businessType === "minera" && state.efficiency >= 35 && state.cash >= 30000,
+    options: [
+      {
+        text: "Pagar canon portuario y firmar contrato (-$25.000)",
+        outcomeText: "El contrato se sella. Aseguras ventas masivas internacionales garantizadas por 12 meses.",
+        action: (state) => {
+          state.cash -= 25000;
+          const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+          const scale = Math.max(1, Math.floor(netAssets / 120000));
+          const monthlyRevenue = 35000 * scale;
+          state.activeTenders.push({
+            id: Math.floor(Math.random() * 100000) + 10000,
+            title: "Exportación Litio Asia",
+            monthlyRevenue,
+            turnsLeft: 12
+          });
+          state.historyLog.unshift(`[Minería] Exportación de Litio sellada (+$${monthlyRevenue.toLocaleString()}/mes) por 12 meses.`);
+        }
+      },
+      {
+        text: "Declinar la exportación y acopiar stock",
+        outcomeText: "Mantienes la producción en inventario esperando mejores precios de commodity.",
+        action: (state) => {
+          state.historyLog.unshift(`[Minería] Declinaste exportar litio a Corea del Sur.`);
+        }
+      }
+    ]
   }
 ];
