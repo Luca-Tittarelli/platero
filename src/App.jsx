@@ -1244,8 +1244,7 @@ export default function App() {
     setState(nextState);
     saveState(nextState, outcomeSummary, nextEvent ? nextEvent.id : null);
     
-    // Toast notification to reassure player that turn has successfully advanced
-    upop.toast.info(`Mes ${nextState.turn} iniciado.`);
+
 
     if (triggerAnnualReport) {
       setShowAnnualModal(true);
