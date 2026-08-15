@@ -128,6 +128,174 @@ const formatMoney = (val) => {
   return (isNegative ? "-$" : "$") + str;
 };
 
+function HistoryChart({ data = [], title = "", color = "#10b981", formatter }) {
+  const width = 500;
+  const height = 220;
+  const padding = { top: 20, right: 20, bottom: 35, left: 55 };
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="mgmt-card glass text-center p-20">
+        <p className="text-muted" style={{ padding: '20px 0' }}>No hay suficientes datos históricos para mostrar.</p>
+      </div>
+    );
+  }
+
+  const rawData = data;
+  const displayData = rawData.slice(-24); // Show last 24 months
+  const dataPointsCount = displayData.length;
+
+  const minVal = Math.min(...displayData);
+  const maxVal = Math.max(...displayData);
+  const valRange = maxVal - minVal;
+  
+  // Padding for y-axis
+  const yMin = valRange === 0 ? minVal - 10 : minVal - valRange * 0.1;
+  const yMax = valRange === 0 ? maxVal + 10 : maxVal + valRange * 0.1;
+  const yRange = yMax - yMin;
+
+  const getX = (index) => {
+    if (dataPointsCount <= 1) return padding.left;
+    return padding.left + (index / (dataPointsCount - 1)) * (width - padding.left - padding.right);
+  };
+
+  const getY = (val) => {
+    if (yRange === 0) return height / 2;
+    return height - padding.bottom - ((val - yMin) / yRange) * (height - padding.top - padding.bottom);
+  };
+
+  // Generate SVG path for line
+  let pathD = "";
+  let areaD = "";
+  if (dataPointsCount > 0) {
+    pathD = `M ${getX(0)} ${getY(displayData[0])}`;
+    for (let i = 1; i < dataPointsCount; i++) {
+      pathD += ` L ${getX(i)} ${getY(displayData[i])}`;
+    }
+    
+    // Closed path for area
+    areaD = `${pathD} L ${getX(dataPointsCount - 1)} ${height - padding.bottom} L ${getX(0)} ${height - padding.bottom} Z`;
+  }
+
+  // Grid lines
+  const gridCount = 4;
+  const yTicks = [];
+  for (let i = 0; i <= gridCount; i++) {
+    const val = yMin + (i / gridCount) * yRange;
+    yTicks.push(val);
+  }
+
+  // X ticks: draw at most 5 tick labels to prevent crowding
+  const xTicksIndices = [];
+  if (dataPointsCount > 1) {
+    const step = Math.max(1, Math.floor(dataPointsCount / 4));
+    for (let i = 0; i < dataPointsCount; i += step) {
+      xTicksIndices.push(i);
+    }
+    if (xTicksIndices[xTicksIndices.length - 1] !== dataPointsCount - 1) {
+      xTicksIndices.push(dataPointsCount - 1);
+    }
+  } else {
+    xTicksIndices.push(0);
+  }
+
+  const gradientId = `grad-${title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${Math.floor(Math.random() * 10000)}`;
+
+  return (
+    <div className="mgmt-card glass" style={{ marginBottom: '15px', padding: '16px' }}>
+      <h4 style={{ color: color, marginBottom: '12px', fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>{title}</span>
+        <span className="font-mono" style={{ fontSize: '0.85rem' }}>
+          Actual: {formatter(rawData[rawData.length - 1])}
+        </span>
+      </h4>
+      <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+        <svg viewBox={`0 0 ${width} ${height}`} className="history-svg-chart" style={{ width: '100%', height: 'auto', display: 'block' }}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.00" />
+            </linearGradient>
+          </defs>
+
+          {/* Grid lines (horizontal) */}
+          {yTicks.map((tick, idx) => {
+            const y = getY(tick);
+            return (
+              <g key={idx}>
+                <line 
+                  x1={padding.left} 
+                  y1={y} 
+                  x2={width - padding.right} 
+                  y2={y} 
+                  stroke="rgba(255,255,255,0.06)" 
+                  strokeDasharray="2,2" 
+                />
+                <text 
+                  x={padding.left - 8} 
+                  y={y + 4} 
+                  fill="var(--text-muted)" 
+                  fontSize="9" 
+                  fontFamily="var(--font-mono)"
+                  textAnchor="end"
+                >
+                  {formatter(tick)}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Area fill */}
+          {areaD && <path d={areaD} fill={`url(#${gradientId})`} />}
+
+          {/* Line stroke */}
+          {pathD && (
+            <path 
+              d={pathD} 
+              fill="none" 
+              stroke={color} 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+            />
+          )}
+
+          {/* Data point dots */}
+          {dataPointsCount <= 24 && displayData.map((val, idx) => (
+            <circle 
+              key={idx} 
+              cx={getX(idx)} 
+              cy={getY(val)} 
+              r="3.5" 
+              fill="var(--bg-primary)" 
+              stroke={color} 
+              strokeWidth="2" 
+            />
+          ))}
+
+          {/* X axis labels */}
+          {xTicksIndices.map((i) => {
+            const x = getX(i);
+            const absTurn = rawData.length - dataPointsCount + i + 1;
+            return (
+              <text 
+                key={i} 
+                x={x} 
+                y={height - 8} 
+                fill="var(--text-muted)" 
+                fontSize="9.5" 
+                fontFamily="var(--font-mono)"
+                textAnchor="middle"
+              >
+                Mes {absTurn}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
+  );
+}
 
 const DEFAULT_STATE = {
   playerName: "Juan Pérez",
@@ -178,7 +346,13 @@ const DEFAULT_STATE = {
   // Stock Market (IPO)
   isPublic: false,
   sharesSold: 0,
-  sharePrice: 0
+  sharePrice: 0,
+
+  // Historical data for charts and statistics
+  historyCash: [80000],
+  historyNetAssets: [80000],
+  historySharePrice: [0],
+  historyAnnualSummaries: []
 };
 
 export default function App() {
@@ -232,13 +406,20 @@ export default function App() {
     setSetupCompanyName(businessLabels[setupType]);
   }, [setupType]);
 
-  // Load game from localStorage on start
   useEffect(() => {
     const saved = localStorage.getItem('platero_game_state');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         const merged = { ...DEFAULT_STATE, ...parsed };
+        
+        // Fallback for saved games without history
+        const netAssetsVal = merged.cash + (merged.hedgedCash || 0) + (merged.machineryCount * 80000) - merged.debt;
+        merged.historyCash = merged.historyCash || [merged.cash];
+        merged.historyNetAssets = merged.historyNetAssets || [netAssetsVal];
+        merged.historySharePrice = merged.historySharePrice || [merged.sharePrice || 0];
+        merged.historyAnnualSummaries = merged.historyAnnualSummaries || [];
+
         setState(merged);
         setIsPlaying(true);
         setLastMonthOutcome(merged.lastMonthOutcome || "");
@@ -294,7 +475,11 @@ export default function App() {
       isPublic: false,
       sharesSold: 0,
       sharePrice: 0,
-      marketingCampaign: "none"
+      marketingCampaign: "none",
+      historyCash: [template.cash],
+      historyNetAssets: [template.cash],
+      historySharePrice: [0],
+      historyAnnualSummaries: []
     };
     
     // Set initial bankruptcy limit
@@ -1223,6 +1408,11 @@ export default function App() {
     }
     nextState.bankruptcyLimit = activeLimit;
 
+    // Save historical data for charts
+    nextState.historyCash = [...(nextState.historyCash || []), nextState.cash];
+    nextState.historyNetAssets = [...(nextState.historyNetAssets || []), nextNetAssets];
+    nextState.historySharePrice = [...(nextState.historySharePrice || []), nextState.sharePrice || 0];
+
     // Progression Milestones
     if (nextNetAssets < 150000) {
       nextState.stage = "Emprendedor de Barrio";
@@ -1322,6 +1512,7 @@ export default function App() {
       
       // Save current year for next year's comparison
       nextState.lastYearSummary = currentYearSummary;
+      nextState.historyAnnualSummaries = [...(nextState.historyAnnualSummaries || []), currentYearSummary];
 
       // Roll a new macroeconomic cycle for the upcoming year
       const rand = Math.random();
@@ -2004,6 +2195,12 @@ export default function App() {
                 >
                   🏛️ Licitaciones y Bolsa
                 </button>
+                <button 
+                  className={`tab-btn ${activeTab === 'tab-stats' ? 'active' : ''}`} 
+                  onClick={() => setActiveTab('tab-stats')}
+                >
+                  📊 Estadísticas y Gráficos
+                </button>
               </nav>
 
               {/* TAB CONTENTS */}
@@ -2407,6 +2604,87 @@ export default function App() {
 
 
 
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'tab-stats' && (
+                  <div className="tab-panel active">
+                    <div className="mgmt-card glass mb-15">
+                      <h3>📊 Sala de Situación y Estadísticas</h3>
+                      <p className="card-desc">Historial completo del desempeño financiero y bursátil de {state.companyName}.</p>
+                    </div>
+
+                    <div className="stats-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '15px' }}>
+                      <HistoryChart 
+                        data={state.historyCash} 
+                        title="💰 Caja Líquida (Pesos)" 
+                        color="#10b981" 
+                        formatter={formatMoney} 
+                      />
+                      
+                      <HistoryChart 
+                        data={state.historyNetAssets} 
+                        title="📈 Patrimonio Neto Consolidado" 
+                        color="#38bdf8" 
+                        formatter={formatMoney} 
+                      />
+
+                      {state.isPublic && (
+                        <HistoryChart 
+                          data={state.historySharePrice} 
+                          title="📈 Cotización de Acción en Bolsa" 
+                          color="var(--color-peso)" 
+                          formatter={(v) => `$${v.toLocaleString()}`} 
+                        />
+                      )}
+                    </div>
+
+                    {/* Tabla de Ejercicios Anuales */}
+                    <div className="mgmt-card glass mt-15">
+                      <h3>📋 Historial de Ejercicios Anuales</h3>
+                      <p className="card-desc">Resultados consolidados al cierre de cada año fiscal.</p>
+                      
+                      {state.historyAnnualSummaries && state.historyAnnualSummaries.length > 0 ? (
+                        <div style={{ overflowX: 'auto', marginTop: '10px' }}>
+                          <table className="balance-table" style={{ width: '100%', minWidth: '400px' }}>
+                            <thead>
+                              <tr>
+                                <th>Año</th>
+                                <th style={{ textAlign: 'right' }}>Ingresos</th>
+                                <th style={{ textAlign: 'right' }}>Gastos</th>
+                                <th style={{ textAlign: 'right' }}>Impuestos</th>
+                                <th style={{ textAlign: 'right' }}>Utilidad Neta</th>
+                                <th style={{ textAlign: 'right' }}>Bolsa</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {state.historyAnnualSummaries.map((yr, idx) => (
+                                <tr key={idx}>
+                                  <td><strong>Año {yr.year}</strong></td>
+                                  <td className="num">${yr.revenue.toLocaleString()}</td>
+                                  <td className="num">${yr.expenses.toLocaleString()}</td>
+                                  <td className="num">${yr.taxes.toLocaleString()}</td>
+                                  <td className={`num font-bold ${yr.net >= 0 ? 'text-positive' : 'text-negative'}`}>
+                                    ${yr.net.toLocaleString()}
+                                  </td>
+                                  <td className="num">
+                                    {yr.isPublic ? (
+                                      <span className="text-positive">${yr.sharePriceEnd} ({yr.stockReturn >= 0 ? '+' : ''}{yr.stockReturn}%)</span>
+                                    ) : (
+                                      <span className="text-muted">Privada</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-muted text-center p-15" style={{ fontSize: '0.85rem' }}>
+                          Aún no has cerrado ningún ejercicio anual. El primer balance se presentará en el Mes 12.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
