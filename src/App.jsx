@@ -544,7 +544,7 @@ export default function App() {
     });
   };
 
-  // Mantenimiento preventivo — frena la depreciación y sube +3% eficiencia
+  // Mantenimiento preventivo — frena la depreciación y sube +10% eficiencia
   const confirmMaintenance = () => {
     const cost = getMaintenanceCost(state.machineryCount);
     if (state.machineryCount === 0) {
@@ -556,7 +556,7 @@ export default function App() {
       return;
     }
     upop.confirm.success(
-      `¿Invertir $${cost.toLocaleString()} en mantenimiento preventivo de tus activos? Reducirá la depreciación mensual y recuperará +3% de Eficiencia.`,
+      `¿Invertir $${cost.toLocaleString()} en mantenimiento preventivo de tus activos? Reducirá la depreciación mensual y recuperará +10% de Eficiencia.`,
       {
         textoAceptar: "Mantener",
         textoCancelar: "Cancelar",
@@ -570,10 +570,10 @@ export default function App() {
       const nextState = { ...prev };
       const cost = getMaintenanceCost(prev.machineryCount);
       nextState.cash -= cost;
-      nextState.efficiency = Math.min(200, nextState.efficiency + 3);
-      // Mark that maintenance was done this month — skip natural depreciation
+      nextState.efficiency = Math.min(200, nextState.efficiency + 10);
+      // Mark that maintenance was done this month - skip natural depreciation
       nextState.maintenanceDoneThisTurn = true;
-      nextState.historyLog.unshift(`[Activos] Mantenimiento preventivo realizado (-$${cost.toLocaleString()}). +3% Eficiencia, depreciación frenada.`);
+      nextState.historyLog.unshift(`[Activos] Mantenimiento preventivo realizado (-$${cost.toLocaleString()}). +10% Eficiencia, depreciación frenada.`);
       saveState(nextState);
       upop.toast.success("Mantenimiento preventivo completado.");
       return nextState;
@@ -1120,11 +1120,11 @@ export default function App() {
 
     // === EFFICIENCY DEPRECIATION (monthly) ===
     // Assets get outdated, staff rotates, processes degrade without investment
-    // Depreciation rate grows with machinery count (bigger fleet = harder to keep updated)
+    // Depreciation rate grows with machinery count (bigger fleet = harder to keep updated), capped at 3% base.
     // Maintenance action this turn prevents depreciation
     if (!nextState.maintenanceDoneThisTurn) {
       const baseDepreciation = nextState.machineryCount > 0
-        ? 1 + Math.floor(nextState.machineryCount / 4) // +1% per 4 assets
+        ? Math.min(3, 1 + Math.floor(nextState.machineryCount / 12)) // Max 3% base, scales 1% per 12 assets
         : 1;
       const depreciationHit = nextState.economicCycle === "Estanflación" ? baseDepreciation + 1 : baseDepreciation;
       nextState.efficiency = Math.max(5, nextState.efficiency - depreciationHit);
@@ -1944,7 +1944,7 @@ export default function App() {
                       onClick={confirmMaintenance}
                       className="btn btn-secondary w-100"
                       style={{ opacity: canAfford ? 1 : 0.5 }}
-                      title={`Frena la depreciación mensual y recupera +3% de Eficiencia. Costo: $${maintCost.toLocaleString()}`}
+                      title={`Frena la depreciación mensual y recupera +10% de Eficiencia. Costo: $${maintCost.toLocaleString()}`}
                     >
                       🔧 Mantenimiento (${maintCost.toLocaleString()})
                     </button>
