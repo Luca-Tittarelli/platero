@@ -1435,8 +1435,12 @@ export default function App() {
   
   const projTaxPlanningCost = state.taxPlanningEnabled ? 3000 : 0;
   const projRndCost = Number(state.rndInvestment);
+  
+  const projHedgeYieldRate = state.economicCycle === "Estanflación" ? 0.0075 : 0.0045;
+  const projHedgeYield = Math.floor((state.hedgedCash || 0) * projHedgeYieldRate);
+
   const projTotalCost = projSalaryCost + projOpCost + projTaxCost + projInterestCost + projRndCost + projTaxPlanningCost;
-  const projNet = projTotalRevenue - projTotalCost;
+  const projNet = projTotalRevenue - projTotalCost + projHedgeYield;
 
   // Valuation helper (Estimated Market Cap or Exchange Market Cap)
   const baseCurrentPe = 12 + Math.floor((state.reputation / 100) * 10) + Math.floor((state.innovation / 100) * 5);
@@ -1801,6 +1805,16 @@ export default function App() {
                       <span className="stat-value text-negative">-$3.000</span>
                     </div>
                   )}
+                  {state.hedgedCash > 0 && (() => {
+                    const hedgeYieldRate = state.economicCycle === "Estanflación" ? 0.0075 : 0.0045;
+                    const projHedgeYield = Math.floor(state.hedgedCash * hedgeYieldRate);
+                    return projHedgeYield > 0 ? (
+                      <div className="stat-row">
+                        <span className="stat-label text-positive" title="Rendimiento mensual estimado de tus inversiones en Letras/FCI">📈 Rendimiento Letras/FCI:</span>
+                        <span className="stat-value text-positive">+${projHedgeYield.toLocaleString()}</span>
+                      </div>
+                    ) : null;
+                  })()}
                   {(() => {
                     const inflationRate = state.governmentType === "Comunismo" ? 0.05 : state.governmentType === "Justicialismo" ? 0.03 : state.economicCycle === "Estanflación" ? 0.04 : 0.0;
                     const loss = Math.floor(state.cash * inflationRate);
