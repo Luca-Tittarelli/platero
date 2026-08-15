@@ -114,6 +114,20 @@ const getActiveBankruptcyLimit = (state, monthlyRevenue = 0) => {
   return instantLimit;
 };
 
+const formatMoney = (val) => {
+  const isNegative = val < 0;
+  const absVal = Math.abs(val);
+  let str = "";
+  if (absVal >= 1000000) {
+    str = parseFloat((absVal / 1000000).toFixed(2)) + "M";
+  } else if (absVal >= 1000) {
+    str = parseFloat((absVal / 1000).toFixed(1)) + "k";
+  } else {
+    str = absVal.toString();
+  }
+  return (isNegative ? "-$" : "$") + str;
+};
+
 
 const DEFAULT_STATE = {
   playerName: "Juan Pérez",
@@ -930,15 +944,15 @@ export default function App() {
 
     if (nextState.marketingCampaign === "digital") {
       marketingCost = 5000;
-      marketingClientGain = 4 + Math.floor(Math.random() * 5); // 4-8 clients
+      marketingClientGain = 1 + Math.floor(Math.random() * 3); // 1-3 clients
       marketingRepGain = 1;
     } else if (nextState.marketingCampaign === "mass_media") {
       marketingCost = 25000;
-      marketingClientGain = 15 + Math.floor(Math.random() * 16); // 15-30 clients
+      marketingClientGain = 5 + Math.floor(Math.random() * 6); // 5-10 clients
       marketingRepGain = 2;
     } else if (nextState.marketingCampaign === "b2b") {
       marketingCost = 80000;
-      marketingClientGain = 50 + Math.floor(Math.random() * 41); // 50-90 clients
+      marketingClientGain = 15 + Math.floor(Math.random() * 11); // 15-25 clients
       marketingRepGain = 3;
     }
 
@@ -1137,14 +1151,14 @@ export default function App() {
     } else if (nextState.priceMultiplier < 0.9) {
       // Promotional price growth is slowed down, and halved in stagflation
       const multiplierFactor = isEstanflacion ? 0.015 : 0.03;
-      nextState.clients = Math.min(1000, nextState.clients + Math.floor(nextState.clients * multiplierFactor) + 1);
+      nextState.clients = Math.min(10000, nextState.clients + Math.floor(nextState.clients * multiplierFactor) + 1);
     }
 
     if (!isEstanflacion) {
       if (nextState.reputation > 70) {
         const repGrowthFactor = (nextState.reputation - 70) / 1200;
         const repGain = Math.floor(nextState.clients * repGrowthFactor) + 1;
-        nextState.clients = Math.min(1000, nextState.clients + repGain);
+        nextState.clients = Math.min(10000, nextState.clients + repGain);
       } else if (nextState.reputation < 35) {
         const repDecayFactor = (35 - nextState.reputation) / 600;
         const repLoss = Math.floor(nextState.clients * repDecayFactor) + 1;
@@ -1153,17 +1167,17 @@ export default function App() {
 
       // Government specific organic growth
       if (nextState.governmentType === "Liberalismo") {
-        nextState.clients = Math.min(1000, nextState.clients + 5);
+        nextState.clients = Math.min(10000, nextState.clients + 5);
       } else if (nextState.governmentType === "Radicalismo") {
-        nextState.clients = Math.min(1000, nextState.clients + 2);
+        nextState.clients = Math.min(10000, nextState.clients + 2);
       } else if (nextState.governmentType === "Provincianismo" && ["industrial", "construccion"].includes(nextState.businessType)) {
-        nextState.clients = Math.min(1000, nextState.clients + 3);
+        nextState.clients = Math.min(10000, nextState.clients + 3);
       }
     }
 
     // Apply marketing campaign gains
     if (marketingClientGain > 0) {
-      nextState.clients = Math.min(1000, nextState.clients + marketingClientGain);
+      nextState.clients = Math.min(10000, nextState.clients + marketingClientGain);
     }
     if (marketingRepGain > 0) {
       nextState.reputation = Math.min(100, nextState.reputation + marketingRepGain);
@@ -1696,10 +1710,10 @@ export default function App() {
                   <div className="glass" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
                     <span className="stat-label" style={{ fontSize: '0.72rem', display: 'block', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Caja Líquida</span>
                     <span className={`stat-value ${state.cash >= 0 ? 'text-positive' : 'text-negative'}`} style={{ fontSize: '1.1rem', display: 'block' }}>
-                      ${state.cash.toLocaleString()}
+                      {formatMoney(state.cash)}
                     </span>
                     <span style={{ fontSize: '0.68rem', display: 'block', color: 'var(--text-secondary)', marginTop: '3px' }}>
-                      Límite: -${getActiveBankruptcyLimit(state, projTotalRevenue).toLocaleString()}
+                      Límite: -{formatMoney(getActiveBankruptcyLimit(state, projTotalRevenue))}
                     </span>
                   </div>
                   <div className="glass" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
@@ -1707,7 +1721,7 @@ export default function App() {
                       {state.isPublic ? 'Valuación Bolsa' : 'Valuación Est.'}
                     </span>
                     <span className="stat-value text-warning" style={{ fontSize: '1.1rem' }}>
-                      ${currentMarketCap.toLocaleString()}
+                      {formatMoney(currentMarketCap)}
                     </span>
                   </div>
                 </div>
@@ -2096,21 +2110,21 @@ export default function App() {
                             name: "📱 Marketing Digital",
                             cost: 5000,
                             desc: "Anuncios optimizados en redes sociales y buscadores.",
-                            effect: "Costo: $5.000/mes | +4 a +8 clientes/mes, +1% reputación/mes"
+                            effect: "Costo: $5.000/mes | +1 a +3 clientes/mes, +1% reputación/mes"
                           },
                           {
                             id: "mass_media",
                             name: "📺 Campaña de Prensa y TV",
                             cost: 25000,
                             desc: "Presencia en radio, TV local y cartelería en vía pública.",
-                            effect: "Costo: $25.000/mes | +15 a +30 clientes/mes, +2% reputación/mes"
+                            effect: "Costo: $25.000/mes | +5 a +10 clientes/mes, +2% reputación/mes"
                           },
                           {
                             id: "b2b",
                             name: "🤝 Fuerza de Ventas B2B",
                             cost: 80000,
                             desc: "Equipo comercial dedicado a captar grandes cuentas corporativas.",
-                            effect: "Costo: $80.000/mes | +50 a +90 clientes/mes, +3% reputación/mes"
+                            effect: "Costo: $80.000/mes | +15 a +25 clientes/mes, +3% reputación/mes"
                           }
                         ].map(camp => {
                           const isActive = state.marketingCampaign === camp.id;
@@ -2920,7 +2934,7 @@ export default function App() {
             <div className="modal-body">
               <p id="end-description">
                 {gameOverReason === 'bankruptcy' ? 
-                  `Tus fondos en caja cayeron a $${state.cash.toLocaleString()}, superando tu límite de descubierto autorizado de -$${(state.bankruptcyLimit || 500000).toLocaleString()}. Los bancos congelaron tus actividades comerciales y remataron tus maquinarias.` :
+                  `Tus fondos en caja cayeron a ${formatMoney(state.cash)}, superando tu límite de descubierto autorizado de -${formatMoney(state.bankruptcyLimit || 500000)}. Los bancos congelaron tus actividades comerciales y remataron tus maquinarias.` :
                   "¡FELICITACIONES! Has alcanzado un patrimonio neto que supera los $10.000.000. Tu corporación es ahora dueña oculta de los resortes económicos de la patria."
                 }
               </p>
@@ -2928,8 +2942,8 @@ export default function App() {
               <div className="end-stats-box glass">
                 <h3>Resumen de tu Imperio</h3>
                 <div className="end-stat-grid">
-                  <div><strong>Patrimonio:</strong> <span className="text-warning">${netAssetsVal.toLocaleString()}</span></div>
-                  <div><strong>Caja Final:</strong> <span className="text-positive">${state.cash.toLocaleString()}</span></div>
+                  <div><strong>Patrimonio:</strong> <span className="text-warning">{formatMoney(netAssetsVal)}</span></div>
+                  <div><strong>Caja Final:</strong> <span className="text-positive">{formatMoney(state.cash)}</span></div>
                   <div><strong>Contactos Políticos:</strong> <span className="text-state">{state.contacts}%</span></div>
                   <div><strong>Eficiencia Operativa:</strong> <span className="text-positive">{state.efficiency}%</span></div>
                   <div><strong>Innovación Técnica:</strong> <span className="text-info">{state.innovation}%</span></div>
