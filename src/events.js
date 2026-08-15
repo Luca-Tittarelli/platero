@@ -366,7 +366,7 @@ export const events = [
         outcomeText: "El contrato se sella. Logras una fuente masiva de clientes privados recurrentes y tu reputación explota.",
         action: (state) => {
           state.cash -= 30000;
-          state.clients = Math.min(1000, state.clients + 120);
+          state.clients = Math.min(10000, state.clients + 120);
           state.reputation = Math.min(100, state.reputation + 25);
           state.independence = Math.min(100, state.independence + 15);
           state.historyLog.unshift(`[Mercosur] Exportación a Brasil cerrada exitosamente. +120 Clientes, +25 Reputación.`);
@@ -600,7 +600,7 @@ export const events = [
         text: "Mantener precios estables y ganar participación de mercado",
         outcomeText: "Capturas clientes que antes importaban. Tu base de clientes privados sube significativamente.",
         action: (state) => {
-          state.clients = Math.min(1000, state.clients + 60);
+          state.clients = Math.min(10000, state.clients + 60);
           state.reputation = Math.min(100, state.reputation + 15);
           state.historyLog.unshift(`[Aranceles] Mantuviste precios estables ante el arancel. +60 Clientes nuevos.`);
         }
@@ -1020,7 +1020,7 @@ export const events = [
         action: (state) => {
           state.cash -= 50000;
           const clientsGained = Math.floor(state.clients * 0.40);
-          state.clients = Math.min(1000, state.clients + clientsGained);
+          state.clients = Math.min(10000, state.clients + clientsGained);
           state.reputation = Math.min(100, state.reputation + 10);
           state.historyLog.unshift(`[M&A] Absorber competidor sumó ${clientsGained} clientes nuevos.`);
         }
@@ -1036,7 +1036,7 @@ export const events = [
         action: (state) => {
           state.cash -= 15000;
           const clientsGained = Math.floor(state.clients * 0.20);
-          state.clients = Math.min(1000, state.clients + clientsGained);
+          state.clients = Math.min(10000, state.clients + clientsGained);
           state.corruptionRisk = Math.min(100, state.corruptionRisk + 20);
           state.historyLog.unshift(`[M&A] Clausuraste competidor usando lobby. +${clientsGained} clientes.`);
         }
@@ -1411,7 +1411,7 @@ export const events = [
         action: (state) => {
           state.cash -= 25000;
           state.reputation = Math.min(100, state.reputation + 25);
-          state.clients = Math.min(1000, state.clients + 35);
+          state.clients = Math.min(10000, state.clients + 35);
           state.historyLog.unshift(`[Software] Normas ISO 9001 certificadas formalmente. -$25.000.`);
         }
       },
@@ -1629,7 +1629,7 @@ export const events = [
         text: "Utilizar la libertad de precios para ofrecer descuentos agresivos",
         outcomeText: "Sumas una base de clientes privados nuevos. Tu cuota de mercado se incrementa en 70 clientes.",
         action: (state) => {
-          state.clients = Math.min(1000, state.clients + 70);
+          state.clients = Math.min(10000, state.clients + 70);
           state.reputation = Math.min(100, state.reputation + 15);
           state.historyLog.unshift(`[DNU] Precios de oferta aplicados por desregulación. +70 Clientes.`);
         }
@@ -1904,7 +1904,7 @@ export const events = [
         outcomeText: "Tus clientes se multiplican de inmediato y accedes a transferencia tecnológica que dispara tu innovación.",
         action: (state) => {
           state.cash -= 100000;
-          state.clients = Math.min(1000, state.clients + 150);
+          state.clients = Math.min(10000, state.clients + 150);
           state.innovation = Math.min(100, state.innovation + 20);
           state.efficiency = Math.min(100, state.efficiency + 15);
           state.historyLog.unshift(`[Alianza] Firmaste Joint-Venture internacional. +150 Clientes, +20% Innovación.`);
@@ -1957,7 +1957,7 @@ export const events = [
         outcomeText: "El mercado responde con entusiasmo. Atraes un aluvión de clientes y consolidas tu reputación.",
         action: (state) => {
           state.cash -= 20000;
-          state.clients = Math.min(1000, state.clients + 80);
+          state.clients = Math.min(10000, state.clients + 80);
           state.reputation = Math.min(100, state.reputation + 20);
           state.historyLog.unshift(`[Mercado] Lanzaste línea Eco-Friendly. +80 Clientes, +20 Reputación.`);
         }
@@ -1983,7 +1983,7 @@ export const events = [
         outcomeText: "La inversión inicial es costosa, pero reduce tu alícuota fiscal neta de forma permanente y atraes clientes de la nueva región.",
         action: (state) => {
           state.cash -= 80000;
-          state.clients = Math.min(1000, state.clients + 60);
+          state.clients = Math.min(10000, state.clients + 60);
           state.panamaTaxShield = true; // Simulates tax break by sharing offshore shield code path or lowering rate
           state.historyLog.unshift(`[Expansión] Nueva planta provincial inaugurada. +60 Clientes, rebaja fiscal del 50%.`);
         }
@@ -2289,7 +2289,7 @@ export const events = [
         action: (state) => {
           state.cash -= 80000;
           state.efficiency = Math.min(200, state.efficiency + 30);
-          state.clients = Math.min(1000, state.clients + 90);
+          state.clients = Math.min(10000, state.clients + 90);
           state.historyLog.unshift(`[Petróleo] Financiaste Shale Gas en Vaca Muerta. +30% Eficiencia.`);
         }
       },
