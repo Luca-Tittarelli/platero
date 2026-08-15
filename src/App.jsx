@@ -93,6 +93,28 @@ const rollElection = (odds) => {
 };
 
 
+const getBankruptcyLimit = (state, monthlyRevenue = 0) => {
+  const employeesCredit = (state.employees || 0) * 50000;
+  const machineryCredit = (state.machineryCount || 0) * 300000;
+  const clientsCredit = (state.clients || 0) * 5000;
+  const revenueCredit = Math.floor(monthlyRevenue * 0.05);
+
+  const netAssets = state.cash + (state.hedgedCash || 0) + (state.machineryCount * 80000) - state.debt;
+  const positiveNetAssets = Math.max(0, netAssets);
+  const netAssetsCredit = Math.floor(positiveNetAssets * 0.10);
+
+  return 500000 + employeesCredit + machineryCredit + clientsCredit + revenueCredit + netAssetsCredit;
+};
+
+const getActiveBankruptcyLimit = (state, monthlyRevenue = 0) => {
+  const instantLimit = getBankruptcyLimit(state, monthlyRevenue);
+  if (state.bankruptcyLimit && instantLimit < state.bankruptcyLimit) {
+    return Math.max(instantLimit, Math.floor(state.bankruptcyLimit * 0.85));
+  }
+  return instantLimit;
+};
+
+
 const DEFAULT_STATE = {
   playerName: "Juan Pérez",
   companyName: "Platero Corp",
@@ -126,6 +148,8 @@ const DEFAULT_STATE = {
   hedgedCash: 0,
   rawMaterialStock: 2,
   taxPlanningEnabled: false,
+  marketingCampaign: "none",
+  bankruptcyLimit: 500000,
 
   // Annual balance accumulators
   annualRevenue: 0,
@@ -255,8 +279,14 @@ export default function App() {
       annualClientsStart: template.clients,
       isPublic: false,
       sharesSold: 0,
-      sharePrice: 0
+      sharePrice: 0,
+      marketingCampaign: "none"
     };
+    
+    // Set initial bankruptcy limit
+    const initialRevenue = template.clients * template.baseMargin * 1.0;
+    initial.bankruptcyLimit = getBankruptcyLimit(initial, initialRevenue);
+
     setState(initial);
     setIsPlaying(true);
     setLastMonthOutcome("");
@@ -626,6 +656,23 @@ export default function App() {
     });
   };
 
+  const handleChangeMarketingCampaign = (campaignType) => {
+    setState(prev => {
+      const nextState = { ...prev, marketingCampaign: campaignType };
+      saveState(nextState);
+      
+      const campaignNames = {
+        none: "Sin campaña activa",
+        digital: "Campaña de Marketing Digital",
+        mass_media: "Campaña de Prensa y TV",
+        b2b: "Fuerza de Ventas B2B"
+      };
+      
+      upop.toast.success(`Estrategia de captación actualizada a: ${campaignNames[campaignType]}.`);
+      return nextState;
+    });
+  };
+
 
 
   // Hiring employees (using confirm)
@@ -873,6 +920,33 @@ export default function App() {
     const template = INDUSTRIES[nextState.businessType];
     const govDef = GOVERNMENTS[nextState.governmentType] || GOVERNMENTS.Radicalismo;
 
+    // Marketing Campaign Expenses and Gains
+    let marketingCost = 0;
+    let marketingClientGain = 0;
+    let marketingRepGain = 0;
+
+    const isEstanflacion = nextState.economicCycle === "Estanflación";
+    const isRecesion = nextState.economicCycle === "Recesión";
+
+    if (nextState.marketingCampaign === "digital") {
+      marketingCost = 5000;
+      marketingClientGain = 4 + Math.floor(Math.random() * 5); // 4-8 clients
+      marketingRepGain = 1;
+    } else if (nextState.marketingCampaign === "mass_media") {
+      marketingCost = 25000;
+      marketingClientGain = 15 + Math.floor(Math.random() * 16); // 15-30 clients
+      marketingRepGain = 2;
+    } else if (nextState.marketingCampaign === "b2b") {
+      marketingCost = 80000;
+      marketingClientGain = 50 + Math.floor(Math.random() * 41); // 50-90 clients
+      marketingRepGain = 3;
+    }
+
+    if (isEstanflacion || isRecesion) {
+      marketingClientGain = Math.floor(marketingClientGain * 0.5);
+      marketingRepGain = Math.max(0, marketingRepGain - 1);
+    }
+
     // Enforce client capacity per employee
     const maxCapacity = nextState.employees * (template.capacityPerEmployee || 20);
     const servedClients = Math.min(nextState.clients, maxCapacity);
@@ -963,8 +1037,16 @@ export default function App() {
     const interestRate = nextState.economicCycle === "Estanflación" ? interestBaseRate + 0.03 : interestBaseRate;
     const interestCost = Math.floor(nextState.debt * interestRate);
 
+    // Overdraft interest if starting cash is negative
+    let overdraftInterest = 0;
+    if (nextState.cash < 0) {
+      const overdraftRate = (interestRate + 0.04) / 12;
+      overdraftInterest = Math.floor(Math.abs(nextState.cash) * overdraftRate);
+      nextState.historyLog.unshift(`[Finanzas] Recargo por descubierto bancario: -$${overdraftInterest.toLocaleString()}.`);
+    }
+
     const taxPlanningCost = nextState.taxPlanningEnabled ? 3000 : 0;
-    const totalExpenses = salaryCost + operatingCost + taxCost + interestCost + Number(nextState.rndInvestment) + taxPlanningCost;
+    const totalExpenses = salaryCost + operatingCost + taxCost + interestCost + Number(nextState.rndInvestment) + taxPlanningCost + marketingCost + overdraftInterest;
     let netProfit = totalRevenue - totalExpenses;
 
     // 3. SHAREHOLDER DIVIDENDS & SHARE PRICE FLUCTUATIONS
@@ -1050,9 +1132,6 @@ export default function App() {
     }
 
     // Client growth/decay based on price multiplier, reputation, and macro cycle
-    const isEstanflacion = nextState.economicCycle === "Estanflación";
-    const isRecesion = nextState.economicCycle === "Recesión";
-
     if (nextState.priceMultiplier > 1.2) {
       nextState.clients = Math.max(10, nextState.clients - Math.floor(nextState.clients * 0.05));
     } else if (nextState.priceMultiplier < 0.9) {
@@ -1063,9 +1142,13 @@ export default function App() {
 
     if (!isEstanflacion) {
       if (nextState.reputation > 70) {
-        nextState.clients = Math.min(1000, nextState.clients + Math.floor(nextState.reputation * 0.02) + 1);
+        const repGrowthFactor = (nextState.reputation - 70) / 1200;
+        const repGain = Math.floor(nextState.clients * repGrowthFactor) + 1;
+        nextState.clients = Math.min(1000, nextState.clients + repGain);
       } else if (nextState.reputation < 35) {
-        nextState.clients = Math.max(10, nextState.clients - (Math.floor((35 - nextState.reputation) * 0.2) + 1));
+        const repDecayFactor = (35 - nextState.reputation) / 600;
+        const repLoss = Math.floor(nextState.clients * repDecayFactor) + 1;
+        nextState.clients = Math.max(10, nextState.clients - repLoss);
       }
 
       // Government specific organic growth
@@ -1076,6 +1159,23 @@ export default function App() {
       } else if (nextState.governmentType === "Provincianismo" && ["industrial", "construccion"].includes(nextState.businessType)) {
         nextState.clients = Math.min(1000, nextState.clients + 3);
       }
+    }
+
+    // Apply marketing campaign gains
+    if (marketingClientGain > 0) {
+      nextState.clients = Math.min(1000, nextState.clients + marketingClientGain);
+    }
+    if (marketingRepGain > 0) {
+      nextState.reputation = Math.min(100, nextState.reputation + marketingRepGain);
+    }
+
+    if (nextState.marketingCampaign !== "none" && marketingCost > 0) {
+      const campaignNames = {
+        digital: "Marketing Digital",
+        mass_media: "Prensa y TV",
+        b2b: "Fuerza de Ventas B2B"
+      };
+      nextState.historyLog.unshift(`[Marketing] Campaña ${campaignNames[nextState.marketingCampaign]} activa: -$${marketingCost.toLocaleString()} | +${marketingClientGain} clientes, +${marketingRepGain}% reputación.`);
     }
 
     // Comunismo suppresses private market and sets wages by decree
@@ -1101,11 +1201,13 @@ export default function App() {
 
     // Check bankrupt — no upper victory limit (open-ended sandbox)
     const nextNetAssets = nextState.cash + (nextState.hedgedCash || 0) + (nextState.machineryCount * 80000) - nextState.debt;
-    if (nextState.cash < -500000) {
+    const activeLimit = getActiveBankruptcyLimit(nextState, totalRevenue);
+    if (nextState.cash < -activeLimit) {
       setGameOverReason("bankruptcy");
       setShowGameOverModal(true);
       return;
     }
+    nextState.bankruptcyLimit = activeLimit;
 
     // Progression Milestones
     if (nextNetAssets < 150000) {
@@ -1593,8 +1695,11 @@ export default function App() {
                 <div className="stat-row-large" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px', marginBottom: '12px' }}>
                   <div className="glass" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
                     <span className="stat-label" style={{ fontSize: '0.72rem', display: 'block', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Caja Líquida</span>
-                    <span className={`stat-value ${state.cash >= 0 ? 'text-positive' : 'text-negative'}`} style={{ fontSize: '1.1rem' }}>
+                    <span className={`stat-value ${state.cash >= 0 ? 'text-positive' : 'text-negative'}`} style={{ fontSize: '1.1rem', display: 'block' }}>
                       ${state.cash.toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: '0.68rem', display: 'block', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                      Límite: -${getActiveBankruptcyLimit(state, projTotalRevenue).toLocaleString()}
                     </span>
                   </div>
                   <div className="glass" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
@@ -1966,6 +2071,85 @@ export default function App() {
                         })()}
                       </div>
                     )}
+
+                    {/* ESTRATEGIA DE MARKETING (FLUJO PRINCIPAL) */}
+                    <div className="event-card glass animated-fade-in" style={{ margin: '20px auto 0', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '20px' }}>
+                      <div className="event-header" style={{ paddingBottom: '10px', borderBottom: '1px solid rgba(56, 189, 248, 0.15)', marginBottom: '15px' }}>
+                        <span className="event-category" style={{ background: '#38bdf8', color: 'black', fontWeight: 'bold' }}>📣 MEDIDAS DE CAPTACIÓN</span>
+                        <h2 style={{ fontSize: '1.4rem', color: '#38bdf8', margin: '4px 0 0' }}>Campaña de Marketing Activa</h2>
+                        <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                          Ajustá tu inversión en marketing digital o tradicional para acelerar activamente la entrada de nuevos clientes y potenciar tu reputación corporativa.
+                        </p>
+                      </div>
+
+                      <div className="marketing-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                        {[
+                          {
+                            id: "none",
+                            name: "🚫 Sin Campaña",
+                            cost: 0,
+                            desc: "Crecimiento puramente orgánico por reputación y precio.",
+                            effect: "Costo: $0 | Sin impacto extra"
+                          },
+                          {
+                            id: "digital",
+                            name: "📱 Marketing Digital",
+                            cost: 5000,
+                            desc: "Anuncios optimizados en redes sociales y buscadores.",
+                            effect: "Costo: $5.000/mes | +4 a +8 clientes/mes, +1% reputación/mes"
+                          },
+                          {
+                            id: "mass_media",
+                            name: "📺 Campaña de Prensa y TV",
+                            cost: 25000,
+                            desc: "Presencia en radio, TV local y cartelería en vía pública.",
+                            effect: "Costo: $25.000/mes | +15 a +30 clientes/mes, +2% reputación/mes"
+                          },
+                          {
+                            id: "b2b",
+                            name: "🤝 Fuerza de Ventas B2B",
+                            cost: 80000,
+                            desc: "Equipo comercial dedicado a captar grandes cuentas corporativas.",
+                            effect: "Costo: $80.000/mes | +50 a +90 clientes/mes, +3% reputación/mes"
+                          }
+                        ].map(camp => {
+                          const isActive = state.marketingCampaign === camp.id;
+                          return (
+                            <div 
+                              key={camp.id}
+                              onClick={() => handleChangeMarketingCampaign(camp.id)}
+                              style={{
+                                border: isActive ? '1px solid var(--color-success)' : '1px solid rgba(255,255,255,0.06)',
+                                borderRadius: '8px',
+                                padding: '12px',
+                                background: isActive ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255,255,255,0.015)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}
+                              className={isActive ? 'active-camp' : ''}
+                            >
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '70%' }}>
+                                <span style={{ fontWeight: 'bold', fontSize: '0.95rem', color: isActive ? 'var(--color-success)' : 'var(--text-primary)' }}>
+                                  {camp.name}
+                                </span>
+                                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{camp.desc}</span>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 'bold', color: isActive ? 'var(--color-success)' : 'var(--color-peso)' }}>
+                                  {camp.effect} { (state.economicCycle === "Recesión" || state.economicCycle === "Estanflación") && camp.id !== "none" ? " (⚠️ Efectividad -50% por crisis)" : "" }
+                                </span>
+                              </div>
+                              <div>
+                                <span className={`badge ${isActive ? 'bg-success' : 'bg-secondary'}`} style={{ fontSize: '0.72rem', padding: '4px 8px' }}>
+                                  {isActive ? 'ACTIVO' : 'ELEGIR'}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
                     {/* ELECTION CAMPAIGN LOBBY BOX */}
                     {state.govTurnsLeft <= 3 && (() => {
@@ -2736,7 +2920,7 @@ export default function App() {
             <div className="modal-body">
               <p id="end-description">
                 {gameOverReason === 'bankruptcy' ? 
-                  "Tus fondos en caja cayeron por debajo de los -$500.000. Los bancos congelaron tus actividades comerciales y remataron tus maquinarias." :
+                  `Tus fondos en caja cayeron a $${state.cash.toLocaleString()}, superando tu límite de descubierto autorizado de -$${(state.bankruptcyLimit || 500000).toLocaleString()}. Los bancos congelaron tus actividades comerciales y remataron tus maquinarias.` :
                   "¡FELICITACIONES! Has alcanzado un patrimonio neto que supera los $10.000.000. Tu corporación es ahora dueña oculta de los resortes económicos de la patria."
                 }
               </p>
